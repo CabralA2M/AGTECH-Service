@@ -1312,7 +1312,21 @@ input,select,textarea{font-family:inherit}
       <!-- Assinaturas -->
       <div class="modal-section">Assinaturas</div>
       <div class="form-row">
-        <div class="sig-box"><div class="sig-box-header">Técnico Responsável</div><div class="sig-box-preview" id="sigTecnico">Assinatura carregada automaticamente</div><div class="sig-box-name" id="sigTecnicoNome">-</div></div>
+        <div class="sig-box">
+          <div class="sig-box-header">Técnico Responsável</div>
+          <div class="sig-box-body" style="padding:6px 12px">
+            <select class="form-select" id="sigTecnicoSelect" onchange="onTecnicoChange()" style="font-size:12px;padding:6px 9px;width:100%"></select>
+          </div>
+          <div class="sig-box-preview" id="sigTecnico">Assinatura carregada automaticamente</div>
+          <div class="sig-box-body" id="sigTecnicoCanvasWrap" style="display:none">
+            <canvas id="sigTecnicoCanvas" class="sig-box-canvas" width="400" height="90"></canvas>
+          </div>
+          <div class="sig-box-actions">
+            <button class="btn-sig-clear" onclick="limparAssinaturaTecnico()">Limpar / assinar à mão</button>
+            <button class="btn-sig-clear" id="btnSigTecRestaurar" onclick="restaurarAssinaturaTecnico()" style="display:none">Usar assinatura salva</button>
+          </div>
+          <div class="sig-box-name" id="sigTecnicoNome">-</div>
+        </div>
         <div class="sig-box">
           <div class="sig-box-header">Responsável do Cliente</div>
           <div class="sig-box-body"><canvas id="sigClienteCanvas" class="sig-box-canvas" width="400" height="90"></canvas></div>
@@ -1802,7 +1816,9 @@ async function viewRelatorio(id) {
             <span class="tag ${statusFatClass(r.status_faturamento)}">${statusFatLabel(r.status_faturamento)}</span>
           </div>
         </div>
-        <div class="rv-company"><div class="rv-company-name">${emp}</div><div class="rv-company-sub">Service</div></div>
+        ${r.empresa_emissora==='agquimic'
+          ? `<div class="rv-company"><div class="rv-company-name">${emp}</div><div class="rv-company-sub">Quimic</div></div>`
+          : `<div class="rv-company" style="background:#fff;border-color:rgba(0,0,0,.08);padding:10px 14px"><img src="${AGTECH_LOGO_B64}" alt="AGTECH Service" style="height:34px;display:block"></div>`}
       </div>
     </div>
     <div style="padding:12px 24px;background:#fff;border-bottom:1px solid var(--gray);display:flex;flex-wrap:wrap;gap:8px">
@@ -1883,6 +1899,7 @@ async function deleteRelatorio(id){if(!confirm('Excluir esta OS?'))return;await 
 
 async function openModalRelatorio(id=null) {
   resetModalRelatorio()
+  let tecnicoSel=G.profile.id, assinaturaSalvaOS=null
   if(id){
     document.getElementById('modalRelatorioTitle').textContent='Editar OS'
     document.getElementById('relId').value=id
@@ -1890,6 +1907,8 @@ async function openModalRelatorio(id=null) {
     const {data:r}=await sb.from('relatorios').select('*,jornadas(*),pendencias(*)').eq('id',id).single()
     hideLoading(); if(!r){toast('Erro','error');return}
     document.getElementById('modalRelatorioTitle').textContent='Editar OS Nº '+osNum(r)
+    tecnicoSel=r.tecnico_id||G.profile.id
+    assinaturaSalvaOS=r.assinatura_tecnico||null
     setCompany(r.empresa_emissora||'agtech')
     document.getElementById('relTitulo').value=r.titulo||''
     document.getElementById('relCliente').value=r.cliente_id||''
@@ -1914,9 +1933,68 @@ async function openModalRelatorio(id=null) {
     document.getElementById('relData').value=new Date().toISOString().split('T')[0]
     addJornadaField()
   }
-  if(G.profile.assinatura) document.getElementById('sigTecnico').innerHTML=`<img src="${G.profile.assinatura}" style="max-height:50px;opacity:.85">`
-  document.getElementById('sigTecnicoNome').textContent=G.profile.nome
+  await initTecnicoSelect(tecnicoSel, assinaturaSalvaOS)
   openModal('modalRelatorio'); initSigCanvas('sigClienteCanvas')
+}
+
+// ── Assinatura do tecnico responsavel (selecionavel / manual) ──
+let G_sigTecManual=null // dataURL quando assinado a mao
+
+async function initTecnicoSelect(tecnicoId, assinaturaGravada){
+  const sel=document.getElementById('sigTecnicoSelect')
+  if(!G.usuarios||!G.usuarios.length){
+    const {data}=await sb.from('usuarios').select('*').eq('ativo',true).neq('perfil','cliente').order('nome')
+    G.usuarios=data||[]
+  }
+  const tecnicos=(G.usuarios||[]).filter(u=>u.ativo!==false)
+  sel.innerHTML=tecnicos.map(u=>`<option value="${u.id}">${esc(u.nome)}${u.assinatura?'':' (sem assinatura)'}</option>`).join('')
+  if(tecnicos.some(u=>u.id===tecnicoId)) sel.value=tecnicoId
+  else if(tecnicos.length) sel.value=tecnicos[0].id
+  // Se a OS tem assinatura manual gravada, mostra ela
+  G_sigTecManual = assinaturaGravada || null
+  document.getElementById('sigTecnicoCanvasWrap').style.display='none'
+  document.getElementById('btnSigTecRestaurar').style.display = G_sigTecManual?'inline-block':'none'
+  renderAssinaturaTecnico()
+}
+
+function tecnicoSelecionado(){
+  const id=document.getElementById('sigTecnicoSelect')?.value
+  return (G.usuarios||[]).find(u=>u.id===id)||G.profile
+}
+
+function renderAssinaturaTecnico(){
+  const u=tecnicoSelecionado()
+  const box=document.getElementById('sigTecnico')
+  const sig = G_sigTecManual || u.assinatura
+  if(sig) box.innerHTML=`<img src="${sig}" style="max-height:50px;opacity:.85">`
+  else box.textContent='Sem assinatura salva — clique em "Limpar / assinar à mão"'
+  document.getElementById('sigTecnicoNome').textContent=u.nome||'-'
+}
+
+function onTecnicoChange(){
+  // Ao trocar de tecnico, descarta assinatura manual e usa a salva dele
+  G_sigTecManual=null
+  document.getElementById('sigTecnicoCanvasWrap').style.display='none'
+  document.getElementById('btnSigTecRestaurar').style.display='none'
+  renderAssinaturaTecnico()
+}
+
+function limparAssinaturaTecnico(){
+  G_sigTecManual=null
+  const box=document.getElementById('sigTecnico')
+  box.textContent='Assine no quadro abaixo'
+  const wrap=document.getElementById('sigTecnicoCanvasWrap')
+  wrap.style.display='block'
+  document.getElementById('btnSigTecRestaurar').style.display='inline-block'
+  initSigCanvas('sigTecnicoCanvas')
+  clearSigCanvas('sigTecnicoCanvas')
+}
+
+function restaurarAssinaturaTecnico(){
+  G_sigTecManual=null
+  document.getElementById('sigTecnicoCanvasWrap').style.display='none'
+  document.getElementById('btnSigTecRestaurar').style.display='none'
+  renderAssinaturaTecnico()
 }
 function resetModalRelatorio(){
   document.getElementById('relId').value=''; document.getElementById('relTitulo').value=''; document.getElementById('relNomeInterno').value=''
@@ -1925,6 +2003,9 @@ function resetModalRelatorio(){
   document.getElementById('pendFields').style.display='none'; document.getElementById('jornadasList').innerHTML=''
   document.getElementById('modalRelBtnsLeft').innerHTML=''; G.jornadaCount=0; G.imgFiles={}; G.anexFiles={}
   buildFileGrid('imgGrid','img',6); buildFileGrid('anexGrid','anex',6); setCompany('agtech')
+  G_sigTecManual=null
+  const wrapTec=document.getElementById('sigTecnicoCanvasWrap'); if(wrapTec) wrapTec.style.display='none'
+  const btnRest=document.getElementById('btnSigTecRestaurar'); if(btnRest) btnRest.style.display='none'
   document.getElementById('modalRelatorioTitle').textContent='Nova Ordem de Servico'
 }
 function setCompany(v){document.getElementById('relEmpresa').value=v;document.getElementById('compAgtech').classList.toggle('active',v==='agtech');document.getElementById('compAgquimic').classList.toggle('active',v==='agquimic')}
@@ -1970,7 +2051,14 @@ async function saveRelatorio(){
   const titulo=document.getElementById('relTitulo').value.trim(), clienteId=document.getElementById('relCliente').value
   if(!titulo){toast('Titulo obrigatorio','error');return}; if(!clienteId){toast('Selecione cliente','error');return}
   showLoading(); const id=document.getElementById('relId').value
-  const payload={titulo,empresa_emissora:document.getElementById('relEmpresa').value,cliente_id:clienteId,nome_interno:document.getElementById('relNomeInterno').value,tipo_chamada:document.getElementById('relTipoChamada').value,tipo_equipamento:document.getElementById('relTipoEquip').value,tipo_manutencao:document.getElementById('relTipoManut').value,numero_serie:document.getElementById('relNumSerie').value,data_conclusao:document.getElementById('relData').value,descricao:document.getElementById('relDescricao').value,tecnico_id:G.profile.id,nome_cliente_assina:document.getElementById('sigClienteNome').value}
+  const tecSel=tecnicoSelecionado()
+  const payload={titulo,empresa_emissora:document.getElementById('relEmpresa').value,cliente_id:clienteId,nome_interno:document.getElementById('relNomeInterno').value,tipo_chamada:document.getElementById('relTipoChamada').value,tipo_equipamento:document.getElementById('relTipoEquip').value,tipo_manutencao:document.getElementById('relTipoManut').value,numero_serie:document.getElementById('relNumSerie').value,data_conclusao:document.getElementById('relData').value,descricao:document.getElementById('relDescricao').value,tecnico_id:tecSel.id,nome_cliente_assina:document.getElementById('sigClienteNome').value}
+  // Assinatura do tecnico: manual (canvas) tem prioridade; senao usa a salva do usuario
+  const sigTecCanvas=document.getElementById('sigTecnicoCanvas')
+  const canvasVisivel=document.getElementById('sigTecnicoCanvasWrap')?.style.display!=='none'
+  if(canvasVisivel && sigTecCanvas && !isCanvasEmpty(sigTecCanvas)) payload.assinatura_tecnico=sigTecCanvas.toDataURL('image/png')
+  else if(G_sigTecManual) payload.assinatura_tecnico=G_sigTecManual
+  else payload.assinatura_tecnico=tecSel.assinatura||null
   const sigCanvas=document.getElementById('sigClienteCanvas')
   if(!isCanvasEmpty(sigCanvas)) payload.assinatura_cliente=sigCanvas.toDataURL('image/png')
   let relId=id, novoReg=null
@@ -1994,12 +2082,18 @@ async function downloadPdfOS(id){
   const {data:r}=await sb.from('relatorios').select('*,clientes(*),usuarios!tecnico_id(*),pendencias(*),jornadas(*),relatorio_arquivos(*)').eq('id',id).single()
   if(!r){hideLoading();toast('Erro','error');return}
   const {jsPDF}=window.jspdf; const doc=new jsPDF({orientation:'p',unit:'mm',format:'a4'}); const W=210,M=15; let y=0
-  doc.setFillColor(26,35,50); doc.rect(0,0,W,28,'F')
-  doc.setFillColor(204,34,34); doc.rect(0,0,4,28,'F')
-  doc.setTextColor(255,255,255); doc.setFontSize(18); doc.setFont('helvetica','bold'); doc.text('AGTECH SERVICE',10,12)
-  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.text('Manutencao Industrial',10,18)
-  doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.text('OS Nº '+osNum(r),W-M,12,{align:'right'})
-  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.text(fmtDate(r.data_conclusao),W-M,18,{align:'right'}); y=35
+  // Cabecalho: logo real da AGTECH (ou texto para AgQuimic)
+  doc.setFillColor(204,34,34); doc.rect(0,0,4,30,'F')
+  if(r.empresa_emissora==='agquimic'){
+    doc.setTextColor(26,35,50); doc.setFontSize(18); doc.setFont('helvetica','bold'); doc.text('AGQUIMIC',10,15)
+    doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(90); doc.text('Produtos e Servicos Quimicos',10,21)
+  } else {
+    try{doc.addImage(AGTECH_LOGO_B64,'PNG',10,7,52,15.1)}catch(e){}
+  }
+  doc.setTextColor(26,35,50); doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.text('OS Nº '+osNum(r),W-M,14,{align:'right'})
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(90); doc.text(fmtDate(r.data_conclusao),W-M,20,{align:'right'})
+  doc.setDrawColor(204,34,34); doc.setLineWidth(0.8); doc.line(10,28,W-M,28)
+  y=38
   doc.setFillColor(44,64,87); doc.rect(M,y,W-M*2,10,'F'); doc.setTextColor(255,255,255); doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.text(r.titulo||'',M+4,y+7); y+=15
   doc.autoTable({startY:y,margin:{left:M,right:M},head:[],body:[
     ['Cliente',r.clientes?.razao_social||'–','No de Serie',r.numero_serie||'–'],
@@ -2113,8 +2207,15 @@ async function downloadPdfOS(id){
   const sw=(W-M*2-10)/2
   doc.setFillColor(248,249,250); doc.rect(M,y,sw,25,'F'); doc.rect(M+sw+10,y,sw,25,'F')
   doc.setTextColor(46,64,87); doc.setFontSize(8); doc.text('Tecnico Responsavel',M+sw/2,y+4,{align:'center'}); doc.text('Responsavel do Cliente',M+sw+10+sw/2,y+4,{align:'center'})
-  doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.text(r.usuarios?.nome||'–',M+sw/2,y+20,{align:'center'}); doc.text(r.nome_cliente_assina||'–',M+sw+10+sw/2,y+20,{align:'center'})
-  doc.setTextColor(150); doc.line(M+3,y+22,M+sw-3,y+22); doc.line(M+sw+13,y+22,M+sw*2+7,y+22)
+  // Imagens das assinaturas (tecnico: gravada na OS, senao a do perfil)
+  const sigTec=r.assinatura_tecnico||r.usuarios?.assinatura
+  const sigCli=r.assinatura_cliente
+  const sigW=sw*0.6, sigH=11
+  if(sigTec){try{doc.addImage(sigTec,'PNG',M+sw/2-sigW/2,y+7,sigW,sigH)}catch(e){}}
+  if(sigCli){try{doc.addImage(sigCli,'PNG',M+sw+10+sw/2-sigW/2,y+7,sigW,sigH)}catch(e){}}
+  doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(46,64,87)
+  doc.text(r.usuarios?.nome||'–',M+sw/2,y+20,{align:'center'}); doc.text(r.nome_cliente_assina||'–',M+sw+10+sw/2,y+20,{align:'center'})
+  doc.setDrawColor(150); doc.line(M+3,y+22,M+sw-3,y+22); doc.line(M+sw+13,y+22,M+sw*2+7,y+22)
   const pc=doc.internal.getNumberOfPages()
   for(let p=1;p<=pc;p++){doc.setPage(p);doc.setFillColor(26,35,50);doc.rect(0,287,210,10,'F');doc.setTextColor(150);doc.setFontSize(7);doc.text('© V2.0 · 2026 A2M System · Agtech Service · Desenvolvido por Matheus Cabral',M,293);doc.text('Pagina '+p+'/'+pc,W-M,293,{align:'right'})}
   doc.save(`OS_${osNum(r)}_${(r.titulo||'relatorio').substring(0,30).replace(/\s+/g,'_')}.pdf`); hideLoading(); toast('PDF gerado!','success')
