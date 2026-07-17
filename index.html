@@ -1977,7 +1977,7 @@ async function openModalRelatorio(id=null) {
     addJornadaField()
   }
   await initTecnicoSelect(tecnicoSel, assinaturaSalvaOS)
-  openModal('modalRelatorio'); initSigCanvas('sigClienteCanvas')
+  openModal('modalRelatorio'); setTimeout(()=>initSigCanvas('sigClienteCanvas'),150)
 }
 
 // ── Assinatura do tecnico responsavel (selecionavel / manual) ──
@@ -2030,8 +2030,7 @@ function limparAssinaturaTecnico(){
   const wrap=document.getElementById('sigTecnicoCanvasWrap')
   wrap.style.display='block'
   document.getElementById('btnSigTecRestaurar').style.display='inline-block'
-  initSigCanvas('sigTecnicoCanvas')
-  clearSigCanvas('sigTecnicoCanvas')
+  setTimeout(()=>{initSigCanvas('sigTecnicoCanvas');clearSigCanvas('sigTecnicoCanvas')},150)
 }
 
 function restaurarAssinaturaTecnico(){
@@ -2378,6 +2377,7 @@ async function saveUsuario(){
     } else {
       const r=await callAdmin('criar_usuario',payload)
       hideLoading(); closeModal('modalUsuario')
+      if(r.reaproveitado) toast('Este email ja existia no Auth — a conta foi reaproveitada e a senha redefinida.','info')
       mostrarSenhaTemporaria(nome,email,r.senha_temporaria)
     }
     loadUsuarios()
@@ -4225,18 +4225,39 @@ async function downloadPdfRTFromHistory(id) {
 
 
 function initSigCanvas(id){
-  const c=document.getElementById(id); if(!c||sigCtxs[id]) return
+  const c=document.getElementById(id); if(!c) return
+  // Evita anexar listeners duas vezes ao mesmo elemento
+  if(c._sigInit){ sigCtxs[id]=c.getContext('2d'); return }
+  c._sigInit=true
   const ctx=c.getContext('2d'); sigCtxs[id]=ctx; let dr=false,lx,ly
-  const pos=(e)=>{const r=c.getBoundingClientRect(),sx=c.width/r.width,sy=c.height/r.height;if(e.touches) return{x:(e.touches[0].clientX-r.left)*sx,y:(e.touches[0].clientY-r.top)*sy};return{x:(e.clientX-r.left)*sx,y:(e.clientY-r.top)*sy}}
-  c.addEventListener('mousedown',e=>{dr=true;const p=pos(e);lx=p.x;ly=p.y})
-  c.addEventListener('mousemove',e=>{if(!dr)return;const p=pos(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.strokeStyle='#1A2332';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.stroke();lx=p.x;ly=p.y})
-  c.addEventListener('mouseup',()=>dr=false); c.addEventListener('mouseleave',()=>dr=false)
-  c.addEventListener('touchstart',e=>{e.preventDefault();dr=true;const p=pos(e);lx=p.x;ly=p.y},{passive:false})
-  c.addEventListener('touchmove',e=>{e.preventDefault();if(!dr)return;const p=pos(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.strokeStyle='#1A2332';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.stroke();lx=p.x;ly=p.y},{passive:false})
-  c.addEventListener('touchend',()=>dr=false)
+  ctx.strokeStyle='#1A2332'; ctx.lineWidth=2.5; ctx.lineCap='round'; ctx.lineJoin='round'
+  c.style.touchAction='none'
+  const pos=(e)=>{
+    const r=c.getBoundingClientRect()
+    const sx=r.width?c.width/r.width:1, sy=r.height?c.height/r.height:1
+    return {x:(e.clientX-r.left)*sx, y:(e.clientY-r.top)*sy}
+  }
+  const start=(e)=>{e.preventDefault();dr=true;const p=pos(e);lx=p.x;ly=p.y;try{c.setPointerCapture(e.pointerId)}catch(_){}}
+  const move=(e)=>{if(!dr)return;e.preventDefault();const p=pos(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.stroke();lx=p.x;ly=p.y}
+  const end=(e)=>{dr=false;try{c.releasePointerCapture(e.pointerId)}catch(_){}}
+  if(window.PointerEvent){
+    c.addEventListener('pointerdown',start)
+    c.addEventListener('pointermove',move)
+    c.addEventListener('pointerup',end)
+    c.addEventListener('pointercancel',end)
+    c.addEventListener('pointerleave',()=>{dr=false})
+  } else {
+    // Fallback para navegadores muito antigos
+    c.addEventListener('mousedown',e=>{dr=true;const p=pos(e);lx=p.x;ly=p.y})
+    c.addEventListener('mousemove',e=>{if(!dr)return;const p=pos(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.stroke();lx=p.x;ly=p.y})
+    c.addEventListener('mouseup',()=>dr=false); c.addEventListener('mouseleave',()=>dr=false)
+    c.addEventListener('touchstart',e=>{e.preventDefault();dr=true;const t=e.touches[0];const r=c.getBoundingClientRect();const sx=r.width?c.width/r.width:1,sy=r.height?c.height/r.height:1;lx=(t.clientX-r.left)*sx;ly=(t.clientY-r.top)*sy},{passive:false})
+    c.addEventListener('touchmove',e=>{e.preventDefault();if(!dr)return;const t=e.touches[0];const r=c.getBoundingClientRect();const sx=r.width?c.width/r.width:1,sy=r.height?c.height/r.height:1;const x=(t.clientX-r.left)*sx,y=(t.clientY-r.top)*sy;ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(x,y);ctx.stroke();lx=x;ly=y},{passive:false})
+    c.addEventListener('touchend',()=>dr=false)
+  }
 }
 function clearPaSig(){const c=document.getElementById('paSigCanvas');sigCtxs['paSigCanvas']?.clearRect(0,0,c.width,c.height)}
-function clearSigCanvas(id){const c=document.getElementById(id);if(c&&sigCtxs[id]) sigCtxs[id].clearRect(0,0,c.width,c.height)}
+function clearSigCanvas(id){const c=document.getElementById(id);if(!c)return;const ctx=sigCtxs[id]||c.getContext('2d');ctx.clearRect(0,0,c.width,c.height)}
 function isCanvasEmpty(c){if(!c)return true;return!c.getContext('2d').getImageData(0,0,c.width,c.height).data.some(v=>v!==0)}
 // MODALS
 function openModal(id){document.getElementById(id).classList.add('open');document.body.style.overflow='hidden'}
