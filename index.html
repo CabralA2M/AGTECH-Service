@@ -4313,6 +4313,7 @@ async function downloadPdfRTFromHistory(id) {
 }
 
 
+const sigCtxs={}
 function initSigCanvas(id){
   const c=document.getElementById(id); if(!c) return
   // Evita anexar listeners duas vezes ao mesmo elemento
