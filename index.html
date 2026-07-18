@@ -1996,6 +1996,8 @@ async function openModalRelatorio(id=null) {
 
 // ── Assinatura do tecnico responsavel (selecionavel / manual) ──
 let G_sigTecManual=null // dataURL quando assinado a mao
+// Emails que NÃO fazem parte da equipe técnica de campo (apenas admin do sistema)
+const EMAILS_FORA_EQUIPE=['mcabral.92@outlook.com']
 
 async function initTecnicoSelect(tecnicoId, assinaturaGravada){
   const sel=document.getElementById('sigTecnicoSelect')
@@ -2003,7 +2005,8 @@ async function initTecnicoSelect(tecnicoId, assinaturaGravada){
     const {data}=await sb.from('usuarios').select('*').eq('ativo',true).neq('perfil','cliente').order('nome')
     G.usuarios=data||[]
   }
-  const tecnicos=(G.usuarios||[]).filter(u=>u.ativo!==false)
+  // Exclui admin do sistema, exceto se ele já for o técnico gravado nesta OS
+  const tecnicos=(G.usuarios||[]).filter(u=>u.ativo!==false&&(!EMAILS_FORA_EQUIPE.includes((u.email||'').toLowerCase())||u.id===tecnicoId))
   sel.innerHTML=tecnicos.map(u=>`<option value="${u.id}">${esc(u.nome)}${u.assinatura?'':' (sem assinatura)'}</option>`).join('')
   if(tecnicos.some(u=>u.id===tecnicoId)) sel.value=tecnicoId
   else if(tecnicos.length) sel.value=tecnicos[0].id
@@ -2023,13 +2026,15 @@ function tecnicoSelecionado(){
 // ── EQUIPE TÉCNICA da OS (checkbox de tecnicos + supervisores) ──
 let G_equipeSel=[]  // array de ids selecionados
 
+// Emails que NÃO fazem parte da equipe técnica de campo (apenas admin do sistema)
+
 async function renderEquipeChecklist(idsSelecionados){
   if(!G.usuarios||!G.usuarios.length){
     const {data}=await sb.from('usuarios').select('*').eq('ativo',true).neq('perfil','cliente').order('nome')
     G.usuarios=data||[]
   }
-  // apenas tecnicos e supervisores
-  const elegiveis=(G.usuarios||[]).filter(u=>['tecnico','supervisor','administrador'].includes(u.perfil)&&u.ativo!==false)
+  // apenas tecnicos e supervisores (exceto quem é só admin do sistema)
+  const elegiveis=(G.usuarios||[]).filter(u=>['tecnico','supervisor','administrador'].includes(u.perfil)&&u.ativo!==false&&!EMAILS_FORA_EQUIPE.includes((u.email||'').toLowerCase()))
   G_equipeSel=Array.isArray(idsSelecionados)?[...idsSelecionados]:[]
   const cont=document.getElementById('equipeChecklist')
   if(!cont) return
