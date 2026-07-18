@@ -2427,7 +2427,7 @@ async function loadUsuarios(){
 }
 const roleColors={administrador:'linear-gradient(135deg,#CC2222,#E8620A)',supervisor:'linear-gradient(135deg,#6A1B9A,#AB47BC)',tecnico:'linear-gradient(135deg,#1565C0,#42A5F5)',financeiro:'linear-gradient(135deg,#1A8A4A,#43C273)',cliente:'linear-gradient(135deg,#D4890A,#F5C842)'}
 function renderUserList(users){
-  document.getElementById('userList').innerHTML=users.map(u=>{const ini=u.nome.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();return `<div class="user-item"><div class="user-item-avatar" style="background:${roleColors[u.perfil]||'var(--navy)'}">${ini}</div><div style="flex:1;min-width:0"><div class="user-item-name">${esc(u.nome)}</div><div class="user-item-sub">${esc(u.email)}</div></div><span class="role-badge role-${u.perfil}">${cap(u.perfil)}</span><div class="status-dot ${u.ativo?'on':'off'}"></div><button class="btn-icon edit" onclick='openModalUsuario(${JSON.stringify(u).replace(/'/g,"\\'")})'>✏</button><button class="btn-icon" title="Gerar nova senha" onclick='resetarSenhaUsuario("${u.id}","${esc(u.nome).replace(/"/g,"&quot;")}","${esc(u.email)}")'>🔑</button></div>`}).join('')||'<div style="padding:20px;text-align:center;font-size:12px;color:var(--gray-mid)">Nenhum usuario</div>'
+  document.getElementById('userList').innerHTML=users.map(u=>{const ini=u.nome.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();const temAcesso=!!u.auth_id;const nomeEsc=esc(u.nome).replace(/"/g,"&quot;");const acessoBtn=temAcesso?`<button class="btn-icon" title="Gerar nova senha" onclick='resetarSenhaUsuario("${u.id}","${nomeEsc}","${esc(u.email)}")'>🔑</button>`:`<button class="btn btn-primary" style="font-size:10px;padding:4px 9px;white-space:nowrap" onclick='darAcessoPortal("${u.id}","${nomeEsc}","${esc(u.email)}")'>🔓 Dar acesso</button>`;const acessoBadge=temAcesso?'':`<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;background:#FFF3CD;color:#856404;border:1px solid #FFE69C;white-space:nowrap;margin-right:4px">SEM ACESSO</span>`;return `<div class="user-item"><div class="user-item-avatar" style="background:${roleColors[u.perfil]||'var(--navy)'}">${ini}</div><div style="flex:1;min-width:0"><div class="user-item-name">${esc(u.nome)}</div><div class="user-item-sub">${esc(u.email)}</div></div>${acessoBadge}<span class="role-badge role-${u.perfil}">${cap(u.perfil)}</span><div class="status-dot ${u.ativo?'on':'off'}"></div><button class="btn-icon edit" onclick='openModalUsuario(${JSON.stringify(u).replace(/'/g,"\\'")})'>✏</button>${acessoBtn}</div>`}).join('')||'<div style="padding:20px;text-align:center;font-size:12px;color:var(--gray-mid)">Nenhum usuario</div>'
 }
 function renderClienteList(c){
   document.getElementById('clienteList').innerHTML=c.map(cl=>`<div class="client-item"><div class="client-item-header"><div style="flex:1;min-width:0"><div class="client-item-name">${esc(cl.razao_social)}</div><div class="client-item-meta">${cl.cnpj?`<span>CNPJ: <b>${esc(cl.cnpj)}</b></span>`:''}${cl.responsavel?`<span>Resp: <b>${esc(cl.responsavel)}</b></span>`:''}</div>${cl.link_acesso?`<div class="client-link-badge" onclick="navigator.clipboard.writeText('${cl.link_acesso}').then(()=>toast('Link copiado!','info'))">Link acesso</div>`:''}</div><button class="btn-icon edit" onclick='openModalCliente(${JSON.stringify(cl).replace(/'/g,"\\'")})'>✏</button></div></div>`).join('')||'<div style="padding:20px;text-align:center;font-size:12px;color:var(--gray-mid)">Nenhum cliente</div>'
@@ -2499,6 +2499,19 @@ async function resetarSenhaUsuario(id,nome,email){
     mostrarSenhaTemporaria(nome,email,r.senha_temporaria)
   }catch(e){hideLoading();toast('Erro: '+e.message,'error')}
 }
+
+// Dá acesso ao portal: cria a conta no Auth para um usuario que ja existe na tabela
+async function darAcessoPortal(id,nome,email){
+  if(!confirm(`Criar acesso ao portal para ${nome}?\n\nSerá gerada uma senha temporária.`))return
+  showLoading()
+  try{
+    const r=await callAdmin('dar_acesso',{id})
+    hideLoading()
+    mostrarSenhaTemporaria(nome,email,r.senha_temporaria)
+    loadUsuarios()
+  }catch(e){hideLoading();toast('Erro: '+e.message,'error')}
+}
+
 function openModalCliente(c=null){
   document.getElementById('clienteId').value=''; document.getElementById('cRazao').value=''; document.getElementById('cCnpj').value=''; document.getElementById('cResp').value=''; document.getElementById('cEmail').value=''; document.getElementById('cTel').value=''
   document.getElementById('clienteLinkArea').style.display='none'; document.getElementById('modalClienteTitle').textContent='Nova Empresa'
