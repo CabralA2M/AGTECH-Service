@@ -1301,6 +1301,11 @@ input,select,textarea{font-family:inherit}
         <div class="toggle-row"><label class="toggle-sw"><input type="checkbox" id="pendEmailAlerta" checked><span class="toggle-slider"></span></label><span class="toggle-label" style="font-size:12px">Enviar alerta por e-mail quando próximo ao vencimento</span></div>
       </div>
 
+      <!-- Equipe Técnica -->
+      <div class="modal-section">Equipe Técnica</div>
+      <div style="font-size:11px;color:var(--gray-mid);margin:-4px 0 8px">Marque quem trabalhou nesta OS. Estes técnicos ficam disponíveis nas jornadas.</div>
+      <div id="equipeChecklist" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:6px"></div>
+
       <!-- Jornadas -->
       <div class="modal-section">Jornadas de Trabalho</div>
       <div id="jornadasList"></div>
@@ -1822,6 +1827,7 @@ async function loadRelatorios() {
 }
 async function viewRelatorio(id) {
   showLoading()
+  if(!G.usuarios||!G.usuarios.length){const {data:us}=await sb.from('usuarios').select('*').eq('ativo',true).neq('perfil','cliente').order('nome');G.usuarios=us||[]}
   const {data:r}=await sb.from('relatorios').select('*,clientes(*),usuarios!tecnico_id(*),pendencias(*),jornadas(*),relatorio_arquivos(*)').eq('id',id).single()
   if(!r){hideLoading();toast('Nao encontrado','error');return}
   G.currentRel=r; nav('ver-relatorio')
@@ -1829,7 +1835,8 @@ async function viewRelatorio(id) {
     sb.from('checklists').select('id,tipo,data_checklist,criado_em').eq('relatorio_id',id).order('criado_em',{ascending:false}),
     sb.from('relatorios_tecnicos').select('id,criado_em').eq('relatorio_id',id).order('criado_em',{ascending:false})
   ])
-  const cl=checklists?.[0]||null
+  const listaChecklists=checklists||[]
+  const cl=listaChecklists[0]||null
   const rt=rts?.[0]||null
   const emp=r.empresa_emissora==='agquimic'?'<span>AG</span>QUIMIC':'<span>AG</span>TECH'
   const imgs=(r.relatorio_arquivos||[]).filter(a=>a.tipo==='imagem')
@@ -1838,7 +1845,8 @@ async function viewRelatorio(id) {
   const jornadas=r.jornadas||[]
   const equipePrincipal=r.usuarios?.nome||'–'
   const equipeExtra=r.tecnicos||''
-  const todaEquipe=[equipePrincipal,...(equipeExtra?equipeExtra.split(',').map(s=>s.trim()).filter(Boolean):[])].filter((v,i,a)=>a.indexOf(v)===i)
+  const equipeIdsNomes=(r.equipe_ids||[]).map(id=>{const u=(G.usuarios||[]).find(x=>x.id===id);return u?u.nome:null}).filter(Boolean)
+  const todaEquipe=[...(equipeIdsNomes.length?equipeIdsNomes:[equipePrincipal]),...(equipeExtra?equipeExtra.split(',').map(s=>s.trim()).filter(Boolean):[])].filter((v,i,a)=>v&&v!=='–'&&a.indexOf(v)===i)
   const sigStatus=r.assinatura_status||'pendente'
   const sigInfo=sigStatus==='assinado'
     ?`<div style="background:#F0FFF4;border:1px solid #B7EBCA;border-radius:8px;padding:10px 14px;font-size:12px;color:var(--success);font-weight:600">✓ Assinado por ${esc(r.nome_cliente_assina||'–')} em ${fmtDate(r.assinatura_confirmada_em)}</div>`
@@ -1895,13 +1903,16 @@ async function viewRelatorio(id) {
     <div class="rv-section">
       <div class="rv-section-title">Documentos Técnicos</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
-        <div style="border:2px solid ${cl?'var(--success)':'var(--gray)'};border-radius:10px;padding:14px 16px;background:${cl?'#F0FFF4':'#fff'}">
+        <div style="border:2px solid ${listaChecklists.length?'var(--success)':'var(--gray)'};border-radius:10px;padding:14px 16px;background:${listaChecklists.length?'#F0FFF4':'#fff'}">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${cl?'var(--success)':'var(--gray-mid)'}">Checklist</div>
-            <span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:${cl?'#D4EDDA':'var(--bg)'};color:${cl?'var(--success)':'var(--gray-mid)'};border:1px solid ${cl?'#B7EBCA':'var(--gray)'}">${cl?'PREENCHIDO':'PENDENTE'}</span>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${listaChecklists.length?'var(--success)':'var(--gray-mid)'}">Checklists</div>
+            <span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:${listaChecklists.length?'#D4EDDA':'var(--bg)'};color:${listaChecklists.length?'var(--success)':'var(--gray-mid)'};border:1px solid ${listaChecklists.length?'#B7EBCA':'var(--gray)'}">${listaChecklists.length?listaChecklists.length+' ADICIONADO'+(listaChecklists.length>1?'S':''):'PENDENTE'}</span>
           </div>
-          ${cl
-            ?`<div style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:4px">${nomesCL[cl.tipo]||cl.tipo}</div><div style="font-size:11px;color:var(--gray-mid)">${fmtDate(cl.data_checklist||cl.criado_em)}</div><div style="display:flex;gap:6px;margin-top:10px"><button class="btn btn-danger" style="font-size:11px;padding:5px 10px" onclick="downloadPdfChecklistById('${cl.id}','${cl.tipo}')">PDF</button></div>`
+          ${listaChecklists.length
+            ? listaChecklists.map(c=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,.06)">
+                <div style="min-width:0"><div style="font-size:12px;font-weight:600;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nomesCL[c.tipo]||c.tipo}</div><div style="font-size:10px;color:var(--gray-mid)">${fmtDate(c.data_checklist||c.criado_em)}</div></div>
+                <button class="btn btn-danger" style="font-size:10px;padding:4px 9px;flex-shrink:0" onclick="downloadPdfChecklistById('${c.id}','${c.tipo}')">PDF</button>
+              </div>`).join('')+`<button class="btn btn-primary" style="font-size:11px;margin-top:10px;width:100%;justify-content:center" onclick="abrirModalEscolherChecklist(${r.id})">+ Adicionar outro checklist</button>`
             :`<div style="font-size:12px;color:var(--gray-mid);margin-bottom:10px">Nenhum checklist adicionado</div><button class="btn btn-primary" style="font-size:12px" onclick="abrirModalEscolherChecklist(${r.id})">+ Adicionar Checklist</button>`}
         </div>
         <div style="border:2px solid ${rt?'var(--success)':'var(--gray)'};border-radius:10px;padding:14px 16px;background:${rt?'#F0FFF4':'#fff'}">
@@ -1962,6 +1973,8 @@ async function openModalRelatorio(id=null) {
     document.getElementById('relNumSerie').value=r.numero_serie||''
     document.getElementById('relData').value=r.data_conclusao||''
     document.getElementById('relDescricao').value=r.descricao||''
+    // Equipe Técnica da OS (precisa vir ANTES das jornadas)
+    await renderEquipeChecklist(r.equipe_ids||[])
     if(r.pendencias?.length){
       const p=r.pendencias[0]; document.getElementById('relTemPend').checked=true; togglePendFields()
       document.getElementById('pendCrit').value=p.criticidade||'medio'
@@ -1974,6 +1987,7 @@ async function openModalRelatorio(id=null) {
     document.getElementById('modalRelBtnsLeft').innerHTML=`<button class="btn btn-danger" onclick="downloadPdfOS(${id});closeModal('modalRelatorio')">PDF</button>`
   } else {
     document.getElementById('relData').value=new Date().toISOString().split('T')[0]
+    await renderEquipeChecklist([])
     addJornadaField()
   }
   await initTecnicoSelect(tecnicoSel, assinaturaSalvaOS)
@@ -2004,6 +2018,41 @@ async function initTecnicoSelect(tecnicoId, assinaturaGravada){
 function tecnicoSelecionado(){
   const id=document.getElementById('sigTecnicoSelect')?.value
   return (G.usuarios||[]).find(u=>u.id===id)||G.profile
+}
+
+// ── EQUIPE TÉCNICA da OS (checkbox de tecnicos + supervisores) ──
+let G_equipeSel=[]  // array de ids selecionados
+
+async function renderEquipeChecklist(idsSelecionados){
+  if(!G.usuarios||!G.usuarios.length){
+    const {data}=await sb.from('usuarios').select('*').eq('ativo',true).neq('perfil','cliente').order('nome')
+    G.usuarios=data||[]
+  }
+  // apenas tecnicos e supervisores
+  const elegiveis=(G.usuarios||[]).filter(u=>['tecnico','supervisor','administrador'].includes(u.perfil)&&u.ativo!==false)
+  G_equipeSel=Array.isArray(idsSelecionados)?[...idsSelecionados]:[]
+  const cont=document.getElementById('equipeChecklist')
+  if(!cont) return
+  cont.innerHTML=elegiveis.map(u=>{
+    const on=G_equipeSel.includes(u.id)
+    return `<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid ${on?'var(--navy)':'var(--gray)'};border-radius:7px;cursor:pointer;font-size:12px" id="eqlbl-${u.id}">
+      <input type="checkbox" ${on?'checked':''} onchange="toggleEquipe('${u.id}',this.checked)" style="width:15px;height:15px;accent-color:var(--navy)">
+      <span>${esc(u.nome)} <span style="color:var(--gray-mid);font-size:10px">· ${cap(u.perfil)}</span></span>
+    </label>`
+  }).join('')||'<div style="font-size:12px;color:var(--gray-mid);grid-column:1/-1">Nenhum técnico/supervisor cadastrado</div>'
+}
+
+function toggleEquipe(id,on){
+  if(on){ if(!G_equipeSel.includes(id)) G_equipeSel.push(id) }
+  else { G_equipeSel=G_equipeSel.filter(x=>x!==id) }
+  const lbl=document.getElementById('eqlbl-'+id)
+  if(lbl) lbl.style.borderColor=on?'var(--navy)':'var(--gray)'
+  // Atualiza as jornadas ja abertas para refletir a equipe
+  atualizarEquipeNasJornadas()
+}
+
+function nomesEquipe(ids){
+  return (ids||G_equipeSel).map(id=>{const u=(G.usuarios||[]).find(x=>x.id===id);return u?u.nome:null}).filter(Boolean)
 }
 
 function renderAssinaturaTecnico(){
@@ -2048,6 +2097,8 @@ function resetModalRelatorio(){
   document.getElementById('modalRelBtnsLeft').innerHTML=''; G.jornadaCount=0; G.imgFiles={}; G.anexFiles={}
   buildFileGrid('imgGrid','img',6); buildFileGrid('anexGrid','anex',6); setCompany('agtech')
   G_sigTecManual=null
+  G_equipeSel=[]
+  const eqc=document.getElementById('equipeChecklist'); if(eqc) eqc.innerHTML=''
   const wrapTec=document.getElementById('sigTecnicoCanvasWrap'); if(wrapTec) wrapTec.style.display='none'
   const btnRest=document.getElementById('btnSigTecRestaurar'); if(btnRest) btnRest.style.display='none'
   document.getElementById('modalRelatorioTitle').textContent='Nova Ordem de Servico'
@@ -2057,6 +2108,8 @@ function togglePendFields(){document.getElementById('pendFields').style.display=
 function addJornadaField(data=null){
   G.jornadaCount++; const n=G.jornadaCount; const div=document.createElement('div')
   div.className='jornada-item'; div.id='jornada-'+n
+  // equipe daquela jornada: se veio do banco usa a salva, senao usa a equipe da OS
+  const equipeJornada = (data&&Array.isArray(data.equipe_ids)) ? data.equipe_ids : [...G_equipeSel]
   div.innerHTML=`<div class="jornada-item-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'grid':'none'">
     <span class="jornada-item-title">Dia ${n}</span>
     <button type="button" onclick="event.stopPropagation();document.getElementById('jornada-${n}').remove()" style="background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer">✕</button>
@@ -2073,11 +2126,47 @@ function addJornadaField(data=null){
     <div class="form-group"><label class="form-label">Chegada Ida</label><input class="form-input" name="jHCI${n}" type="time" value="${data?.ida_horario_chegada||''}"></div>
     <div class="form-group"><label class="form-label">Saida Volta</label><input class="form-input" name="jHSV${n}" type="time" value="${data?.volta_horario_saida||''}"></div>
     <div class="form-group"><label class="form-label">Chegada Volta</label><input class="form-input" name="jHCV${n}" type="time" value="${data?.volta_horario_chegada||''}"></div>
-    <div class="form-group"><label class="form-label">Funcionarios</label><input class="form-input" name="jFunc${n}" type="text" value="${data?.funcionarios_nomes||''}" placeholder="Nomes..."></div>
-    <div class="form-group"><label class="form-label">Qtd.</label><input class="form-input" name="jQtd${n}" type="number" value="${data?.funcionarios_qtd||1}"></div>
+  </div>
+  <div style="padding:10px 13px;background:var(--bg);border-top:1px solid var(--gray)">
+    <div class="form-label" style="margin-bottom:6px">Equipe neste dia <span style="font-weight:400;color:var(--gray-mid);font-size:10px">(desmarque quem não veio)</span></div>
+    <div id="jornadaEquipe${n}" class="jornada-equipe-box" style="display:flex;flex-wrap:wrap;gap:6px"></div>
   </div>`
   document.getElementById('jornadasList').appendChild(div)
+  renderJornadaEquipe(n, equipeJornada)
 }
+
+// Renderiza os chips de equipe dentro de uma jornada especifica
+function renderJornadaEquipe(n, idsMarcados){
+  const box=document.getElementById('jornadaEquipe'+n); if(!box) return
+  const base = G_equipeSel.length ? G_equipeSel : idsMarcados
+  if(!base||!base.length){ box.innerHTML='<span style="font-size:11px;color:var(--gray-mid)">Selecione a Equipe Técnica da OS acima</span>'; return }
+  box.innerHTML=base.map(id=>{
+    const u=(G.usuarios||[]).find(x=>x.id===id); if(!u) return ''
+    const on=idsMarcados.includes(id)
+    return `<label style="display:flex;align-items:center;gap:6px;padding:5px 9px;border:1.5px solid ${on?'var(--navy)':'var(--gray)'};border-radius:20px;cursor:pointer;font-size:11px" data-jeq="${n}" data-id="${id}">
+      <input type="checkbox" ${on?'checked':''} onchange="this.parentElement.style.borderColor=this.checked?'var(--navy)':'var(--gray)'" style="width:13px;height:13px;accent-color:var(--navy)">
+      ${esc(u.nome)}
+    </label>`
+  }).join('')
+}
+
+// Quando a equipe da OS muda, atualiza os chips das jornadas ja abertas
+function atualizarEquipeNasJornadas(){
+  document.querySelectorAll('[id^="jornadaEquipe"]').forEach(box=>{
+    const n=box.id.replace('jornadaEquipe','')
+    // preserva quem ja estava marcado, adiciona novos da equipe
+    const marcados=[...box.querySelectorAll('label[data-id]')].filter(l=>l.querySelector('input').checked).map(l=>l.dataset.id)
+    const novos=G_equipeSel.filter(id=>!marcados.includes(id)&&!box.querySelector(`label[data-id="${id}"]`))
+    renderJornadaEquipe(n, [...marcados, ...novos])
+  })
+}
+
+// Le a equipe marcada de uma jornada
+function lerEquipeJornada(n){
+  const box=document.getElementById('jornadaEquipe'+n); if(!box) return []
+  return [...box.querySelectorAll('label[data-id]')].filter(l=>l.querySelector('input').checked).map(l=>l.dataset.id)
+}
+
 function buildFileGrid(gridId,prefix,count){
   const grid=document.getElementById(gridId); grid.innerHTML=''
   for(let i=1;i<=count;i++){
@@ -2096,7 +2185,7 @@ async function saveRelatorio(){
   if(!titulo){toast('Titulo obrigatorio','error');return}; if(!clienteId){toast('Selecione cliente','error');return}
   showLoading(); const id=document.getElementById('relId').value
   const tecSel=tecnicoSelecionado()
-  const payload={titulo,empresa_emissora:document.getElementById('relEmpresa').value,cliente_id:clienteId,nome_interno:document.getElementById('relNomeInterno').value,tipo_chamada:document.getElementById('relTipoChamada').value,tipo_equipamento:document.getElementById('relTipoEquip').value,tipo_manutencao:document.getElementById('relTipoManut').value,numero_serie:document.getElementById('relNumSerie').value,data_conclusao:document.getElementById('relData').value,descricao:document.getElementById('relDescricao').value,tecnico_id:tecSel.id,nome_cliente_assina:document.getElementById('sigClienteNome').value}
+  const payload={titulo,empresa_emissora:document.getElementById('relEmpresa').value,cliente_id:clienteId,nome_interno:document.getElementById('relNomeInterno').value,tipo_chamada:document.getElementById('relTipoChamada').value,tipo_equipamento:document.getElementById('relTipoEquip').value,tipo_manutencao:document.getElementById('relTipoManut').value,numero_serie:document.getElementById('relNumSerie').value,data_conclusao:document.getElementById('relData').value,descricao:document.getElementById('relDescricao').value,tecnico_id:tecSel.id,equipe_ids:G_equipeSel,nome_cliente_assina:document.getElementById('sigClienteNome').value}
   // Assinatura do tecnico: manual (canvas) tem prioridade; senao usa a salva do usuario
   const sigTecCanvas=document.getElementById('sigTecnicoCanvas')
   const canvasVisivel=document.getElementById('sigTecnicoCanvasWrap')?.style.display!=='none'
@@ -2115,7 +2204,7 @@ async function saveRelatorio(){
   }
   await sb.from('jornadas').delete().eq('relatorio_id',relId)
   const jd=[]
-  for(let i=1;i<=G.jornadaCount;i++){const el=document.getElementById('jornada-'+i);if(!el)continue;const g=n=>el.querySelector(`[name="${n}"]`)?.value||null;jd.push({relatorio_id:relId,data:g('jData'+i),manha_inicio:g('jMI'+i),manha_fim:g('jMF'+i),tarde_inicio:g('jTI'+i),tarde_fim:g('jTF'+i),ida_km:parseFloat(g('jKI'+i)||0),volta_km:parseFloat(g('jKV'+i)||0),ida_horario_saida:g('jHSI'+i),ida_horario_chegada:g('jHCI'+i),volta_horario_saida:g('jHSV'+i),volta_horario_chegada:g('jHCV'+i),funcionarios_nomes:g('jFunc'+i),funcionarios_qtd:parseInt(g('jQtd'+i)||1)})}
+  for(let i=1;i<=G.jornadaCount;i++){const el=document.getElementById('jornada-'+i);if(!el)continue;const g=n=>el.querySelector(`[name="${n}"]`)?.value||null;const eqIds=lerEquipeJornada(i);const eqNomes=nomesEquipe(eqIds);jd.push({relatorio_id:relId,data:g('jData'+i),manha_inicio:g('jMI'+i),manha_fim:g('jMF'+i),tarde_inicio:g('jTI'+i),tarde_fim:g('jTF'+i),ida_km:parseFloat(g('jKI'+i)||0),volta_km:parseFloat(g('jKV'+i)||0),ida_horario_saida:g('jHSI'+i),ida_horario_chegada:g('jHCI'+i),volta_horario_saida:g('jHSV'+i),volta_horario_chegada:g('jHCV'+i),equipe_ids:eqIds,funcionarios_nomes:eqNomes.join(', '),funcionarios_qtd:eqIds.length})}
   if(jd.length) await sb.from('jornadas').insert(jd.filter(j=>j.data))
   for(const [num,file] of Object.entries(G.imgFiles)){const path=`relatorios/${relId}/img_${num}_${Date.now()}`;const {data:up}=await sb.storage.from('arquivos').upload(path,file,{upsert:true});if(up){const {data:url}=sb.storage.from('arquivos').getPublicUrl(path);await sb.from('relatorio_arquivos').insert({relatorio_id:relId,tipo:'imagem',ordem:parseInt(num),caminho_arquivo:url.publicUrl,nome_original:file.name})}}
   for(const [num,file] of Object.entries(G.anexFiles)){const path=`relatorios/${relId}/anex_${num}_${Date.now()}`;const {data:up}=await sb.storage.from('arquivos').upload(path,file,{upsert:true});if(up){const {data:url}=sb.storage.from('arquivos').getPublicUrl(path);await sb.from('relatorio_arquivos').insert({relatorio_id:relId,tipo:'anexo',ordem:parseInt(num),caminho_arquivo:url.publicUrl,nome_original:file.name})}}
@@ -4237,8 +4326,8 @@ function initSigCanvas(id){
     const sx=r.width?c.width/r.width:1, sy=r.height?c.height/r.height:1
     return {x:(e.clientX-r.left)*sx, y:(e.clientY-r.top)*sy}
   }
-  const start=(e)=>{e.preventDefault();dr=true;const p=pos(e);lx=p.x;ly=p.y;try{c.setPointerCapture(e.pointerId)}catch(_){}}
-  const move=(e)=>{if(!dr)return;e.preventDefault();const p=pos(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.stroke();lx=p.x;ly=p.y}
+  const start=(e)=>{e.preventDefault();e.stopPropagation();dr=true;const p=pos(e);lx=p.x;ly=p.y;try{c.setPointerCapture(e.pointerId)}catch(_){}}
+  const move=(e)=>{if(!dr)return;e.preventDefault();e.stopPropagation();const p=pos(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.stroke();lx=p.x;ly=p.y}
   const end=(e)=>{dr=false;try{c.releasePointerCapture(e.pointerId)}catch(_){}}
   if(window.PointerEvent){
     c.addEventListener('pointerdown',start)
@@ -5192,40 +5281,8 @@ async function confirmarAssinatura(){
 }
 
 // ============================================================
-// LINK DRIVE CLIENTES — CORRIGIR
+// LINK DRIVE CLIENTES
 // ============================================================
-function openModalCliente(c=null){
-  document.getElementById('clienteId').value=''; document.getElementById('cRazao').value=''; document.getElementById('cCnpj').value=''; document.getElementById('cResp').value=''; document.getElementById('cEmail').value=''; document.getElementById('cTel').value=''
-  document.getElementById('clienteLinkArea').style.display='none'; document.getElementById('modalClienteTitle').textContent='Nova Empresa'
-  if(c){
-    document.getElementById('modalClienteTitle').textContent='Editar Empresa'
-    document.getElementById('clienteId').value=c.id
-    document.getElementById('cRazao').value=c.razao_social||''
-    document.getElementById('cCnpj').value=c.cnpj||''
-    document.getElementById('cResp').value=c.responsavel||''
-    document.getElementById('cEmail').value=c.email||''
-    document.getElementById('cTel').value=c.telefone||''
-    if(c.link_acesso){
-      document.getElementById('clienteLinkArea').style.display='block'
-      document.getElementById('clienteLinkText').textContent=c.link_acesso
-    }
-    // Mostrar campo de link drive para edição
-    const linkDriveWrap=document.getElementById('clienteLinkDriveWrap')
-    if(linkDriveWrap){document.getElementById('cLinkDrive').value=c.link_acesso||''}
-  }
-  openModal('modalCliente')
-}
-
-async function saveCliente(){
-  const id=document.getElementById('clienteId').value, razao=document.getElementById('cRazao').value.trim()
-  if(!razao){toast('Razão social obrigatória','error');return}
-  const linkDrive=document.getElementById('cLinkDrive')?.value?.trim()||''
-  const payload={razao_social:razao,cnpj:document.getElementById('cCnpj').value,responsavel:document.getElementById('cResp').value,email:document.getElementById('cEmail').value,telefone:document.getElementById('cTel').value,ativo:true}
-  if(linkDrive) payload.link_acesso=linkDrive
-  if(id){const {error}=await sb.from('clientes').update(payload).eq('id',id);if(error){toast('Erro: '+error.message,'error');return}}
-  else{const {error}=await sb.from('clientes').insert(payload);if(error){toast('Erro: '+error.message,'error');return}}
-  closeModal('modalCliente'); toast('Cliente salvo!','success'); loadUsuarios(); loadCaches()
-}
 
 // Atualizar nav para não incluir checklists e RT
 const pageTitles={dashboard:'Dashboard',relatorios:'Ordens de Serviço','ver-relatorio':'Visualizar OS',pendencias:'Pendências',usuarios:'Usuários & Clientes',configuracoes:'Configurações'}
