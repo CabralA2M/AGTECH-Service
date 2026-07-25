@@ -446,6 +446,22 @@ input,select,textarea{font-family:inherit}
 .panel-search input:focus{border-color:var(--red);background:#fff}
 .panel-search svg{position:absolute;left:24px;top:50%;transform:translateY(-50%);color:var(--gray-mid);pointer-events:none}
 .item-list{max-height:500px;overflow-y:auto}
+/* Cards de usuarios e clientes */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;padding:14px;max-height:600px;overflow-y:auto}
+.uc-card{border:1.5px solid var(--gray);border-radius:11px;padding:13px 14px;background:#fff;transition:border-color .12s,box-shadow .12s;display:flex;flex-direction:column;gap:9px}
+.uc-card:hover{border-color:var(--navy);box-shadow:0 3px 10px rgba(0,0,0,.06)}
+.uc-card-top{display:flex;align-items:center;gap:10px}
+.uc-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;flex-shrink:0}
+.uc-name{font-size:13px;font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.uc-sub{font-size:11px;color:var(--gray-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.uc-tags{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.uc-actions{display:flex;gap:5px;border-top:1px solid var(--bg);padding-top:9px}
+.uc-btn{flex:1;font-size:11px;padding:6px 4px;border:1px solid var(--gray);border-radius:7px;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;transition:background .1s,border-color .1s;color:var(--navy)}
+.uc-btn:hover{background:var(--bg)}
+.uc-btn.danger{color:var(--red)}
+.uc-btn.danger:hover{background:#FEF2F2;border-color:#FECACA}
+.uc-btn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+.uc-btn.primary:hover{opacity:.9}
 .user-item{padding:12px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--bg);transition:background .1s}
 .user-item:last-child{border-bottom:none}
 .user-item:hover{background:#FAFBFC}
@@ -1056,7 +1072,7 @@ input,select,textarea{font-family:inherit}
               <button class="btn btn-primary" onclick="openModalUsuario()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Novo</button>
             </div>
             <div class="panel-search"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" placeholder="Buscar usuário..." oninput="filterUsers(this.value)"></div>
-            <div class="item-list" id="userList"><div style="padding:20px;text-align:center;font-size:12px;color:var(--gray-mid)">Carregando...</div></div>
+            <div class="card-grid" id="userList"><div style="padding:20px;text-align:center;font-size:12px;color:var(--gray-mid)">Carregando...</div></div>
           </div>
           <div class="panel">
             <div class="panel-header">
@@ -1064,7 +1080,7 @@ input,select,textarea{font-family:inherit}
               <button class="btn btn-primary" onclick="openModalCliente()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Novo</button>
             </div>
             <div class="panel-search"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" placeholder="Buscar cliente..." oninput="filterClientes(this.value)"></div>
-            <div class="item-list" id="clienteList"><div style="padding:20px;text-align:center;font-size:12px;color:var(--gray-mid)">Carregando...</div></div>
+            <div class="card-grid" id="clienteList"><div style="padding:20px;text-align:center;font-size:12px;color:var(--gray-mid)">Carregando...</div></div>
           </div>
         </div>
       </div>
@@ -1080,7 +1096,7 @@ input,select,textarea{font-family:inherit}
             <div class="settings-nav-item active" onclick="showSettingsSection('senha',this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Alterar Senha</div>
             <div class="settings-nav-item" onclick="showSettingsSection('assinatura',this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Assinatura</div>
             <div class="settings-nav-item" onclick="showSettingsSection('equipe',this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>Equipe Técnica</div>
-            <div class="settings-nav-item nav-admin" onclick="showSettingsSection('acessos',this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Usuários & Clientes</div>
+            <div class="settings-nav-item nav-admin" onclick="nav('usuarios')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Usuários & Clientes</div>
           </div>
           <div>
             <div class="settings-card" id="settSenha">
@@ -1132,21 +1148,6 @@ input,select,textarea{font-family:inherit}
             </div>
 
             <!-- USUÁRIOS & CLIENTES -->
-            <div class="settings-card" id="settAcessos" style="display:none">
-              <div class="settings-card-header">
-                <div class="settings-card-icon blue"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-                <div><div class="settings-card-title">Usuários & Clientes</div><div class="settings-card-desc">Contas com acesso ao sistema e empresas atendidas</div></div>
-              </div>
-              <div class="settings-card-body">
-                <div style="display:flex;gap:8px;margin-bottom:14px">
-                  <button class="btn btn-secondary" style="font-size:12px" onclick="nav('usuarios')">Abrir gestão completa</button>
-                </div>
-                <div style="font-size:12px;color:var(--gray-mid);line-height:1.6">
-                  Aqui você cria contas de acesso, define perfis e libera o portal.
-                  Para os técnicos que apenas executam serviços (sem login), use <b>Equipe Técnica</b>.
-                </div>
-              </div>
-            </div>
 
 
           </div>
@@ -2470,10 +2471,79 @@ async function loadUsuarios(){
 }
 const roleColors={administrador:'linear-gradient(135deg,#CC2222,#E8620A)',supervisor:'linear-gradient(135deg,#6A1B9A,#AB47BC)',tecnico:'linear-gradient(135deg,#1565C0,#42A5F5)',financeiro:'linear-gradient(135deg,#1A8A4A,#43C273)',cliente:'linear-gradient(135deg,#D4890A,#F5C842)'}
 function renderUserList(users){
-  document.getElementById('userList').innerHTML=users.map(u=>{const ini=u.nome.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();const temAcesso=!!u.auth_id;const nomeEsc=esc(u.nome).replace(/"/g,"&quot;");const acessoBtn=temAcesso?`<button class="btn-icon" title="Gerar nova senha" onclick='resetarSenhaUsuario("${u.id}","${nomeEsc}","${esc(u.email)}")'>🔑</button>`:`<button class="btn btn-primary" style="font-size:10px;padding:4px 9px;white-space:nowrap" onclick='darAcessoPortal("${u.id}","${nomeEsc}","${esc(u.email)}")'>🔓 Dar acesso</button>`;const acessoBadge=temAcesso?'':`<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;background:#FFF3CD;color:#856404;border:1px solid #FFE69C;white-space:nowrap;margin-right:4px">SEM ACESSO</span>`;return `<div class="user-item"><div class="user-item-avatar" style="background:${roleColors[u.perfil]||'var(--navy)'}">${ini}</div><div style="flex:1;min-width:0"><div class="user-item-name">${esc(u.nome)}</div><div class="user-item-sub">${esc(u.email)}</div></div>${acessoBadge}<span class="role-badge role-${u.perfil}">${cap(u.perfil)}</span><div class="status-dot ${u.ativo?'on':'off'}"></div><button class="btn-icon edit" onclick='openModalUsuario(${JSON.stringify(u).replace(/'/g,"\\'")})'>✏</button>${acessoBtn}</div>`}).join('')||'<div style="padding:20px;text-align:center;font-size:12px;color:var(--gray-mid)">Nenhum usuario</div>'
+  document.getElementById('userList').innerHTML=users.map(u=>{
+    const ini=u.nome.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase()
+    const temAcesso=!!u.auth_id
+    const nomeEsc=esc(u.nome).replace(/"/g,'&quot;')
+    const jsonU=JSON.stringify(u).replace(/'/g,"\\'").replace(/"/g,'&quot;')
+    const acessoAcao=temAcesso
+      ? `<button class="uc-btn" title="Resetar senha" onclick='resetarSenhaUsuario("${u.id}","${nomeEsc}","${esc(u.email)}")'>🔑 Senha</button>`
+      : `<button class="uc-btn primary" title="Criar login" onclick='darAcessoPortal("${u.id}","${nomeEsc}","${esc(u.email)}")'>🔓 Acesso</button>`
+    const badge=temAcesso?'':`<span style="font-size:8px;font-weight:700;padding:2px 6px;border-radius:8px;background:#FFF3CD;color:#856404;border:1px solid #FFE69C">SEM ACESSO</span>`
+    return `<div class="uc-card">
+      <div class="uc-card-top">
+        <div class="uc-avatar" style="background:${roleColors[u.perfil]||'var(--navy)'}">${ini}</div>
+        <div style="flex:1;min-width:0">
+          <div class="uc-name">${esc(u.nome)}</div>
+          <div class="uc-sub">${esc(u.email)}</div>
+        </div>
+      </div>
+      <div class="uc-tags">
+        <span class="role-badge role-${u.perfil}">${cap(u.perfil)}</span>
+        <span class="status-dot ${u.ativo?'on':'off'}"></span>
+        ${badge}
+      </div>
+      <div class="uc-actions">
+        <button class="uc-btn" title="Editar nível/dados" onclick='openModalUsuario(${jsonU})'>✏ Editar</button>
+        ${acessoAcao}
+        <button class="uc-btn danger" title="Excluir" onclick='excluirUsuario("${u.id}","${nomeEsc}")'>🗑</button>
+      </div>
+    </div>`
+  }).join('')||'<div style="padding:20px;text-align:center;font-size:12px;color:var(--gray-mid);grid-column:1/-1">Nenhum usuário</div>'
+}
+
+async function excluirUsuario(id,nome){
+  if(id===G.profile?.id){toast('Você não pode excluir a si mesmo','error');return}
+  if(!confirm(`Excluir o usuário ${nome}?\n\nA conta de login também será removida. Esta ação é permanente.`))return
+  showLoading()
+  try{
+    await callAdmin('excluir_usuario',{id})
+    hideLoading(); toast('Usuário excluído','info'); loadUsuarios()
+  }catch(e){ hideLoading(); toast('Erro: '+e.message,'error') }
 }
 function renderClienteList(c){
-  document.getElementById('clienteList').innerHTML=c.map(cl=>`<div class="client-item"><div class="client-item-header"><div style="flex:1;min-width:0"><div class="client-item-name">${esc(cl.razao_social)}</div><div class="client-item-meta">${cl.cnpj?`<span>CNPJ: <b>${esc(cl.cnpj)}</b></span>`:''}${cl.responsavel?`<span>Resp: <b>${esc(cl.responsavel)}</b></span>`:''}</div>${cl.link_acesso?`<div class="client-link-badge" onclick="navigator.clipboard.writeText('${cl.link_acesso}').then(()=>toast('Link copiado!','info'))">Link acesso</div>`:''}</div><button class="btn-icon edit" onclick='openModalCliente(${JSON.stringify(cl).replace(/'/g,"\\'")})'>✏</button></div></div>`).join('')||'<div style="padding:20px;text-align:center;font-size:12px;color:var(--gray-mid)">Nenhum cliente</div>'
+  document.getElementById('clienteList').innerHTML=c.map(cl=>{
+    const ini=(cl.razao_social||'?').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase()
+    const jsonC=JSON.stringify(cl).replace(/'/g,"\\'").replace(/"/g,'&quot;')
+    const nomeEsc=esc(cl.razao_social||'').replace(/'/g,"")
+    return `<div class="uc-card">
+      <div class="uc-card-top">
+        <div class="uc-avatar" style="background:linear-gradient(135deg,#D4890A,#F5C842)">${ini}</div>
+        <div style="flex:1;min-width:0">
+          <div class="uc-name">${esc(cl.razao_social)}</div>
+          <div class="uc-sub">${cl.responsavel?esc(cl.responsavel):(cl.cnpj?'CNPJ '+esc(cl.cnpj):'—')}</div>
+        </div>
+      </div>
+      <div class="uc-tags" style="font-size:11px;color:var(--gray-mid)">
+        ${cl.cnpj?`<span>CNPJ: <b>${esc(cl.cnpj)}</b></span>`:''}
+        ${cl.telefone?`<span>Tel: <b>${esc(cl.telefone)}</b></span>`:''}
+        ${cl.link_acesso?`<span class="client-link-badge" style="cursor:pointer" onclick="navigator.clipboard.writeText('${cl.link_acesso}').then(()=>toast('Link copiado!','info'))">🔗 Link acesso</span>`:''}
+      </div>
+      <div class="uc-actions">
+        <button class="uc-btn" title="Editar" onclick='openModalCliente(${jsonC})'>✏ Editar</button>
+        <button class="uc-btn danger" title="Excluir" onclick='excluirCliente("${cl.id}","${nomeEsc}")'>🗑 Excluir</button>
+      </div>
+    </div>`
+  }).join('')||'<div style="padding:20px;text-align:center;font-size:12px;color:var(--gray-mid);grid-column:1/-1">Nenhum cliente</div>'
+}
+
+async function excluirCliente(id,nome){
+  if(!confirm(`Excluir o cliente ${nome}?\n\nEsta ação é permanente.`))return
+  showLoading()
+  try{
+    await callAdmin('excluir_cliente',{id})
+    hideLoading(); toast('Cliente excluído','info'); loadUsuarios()
+  }catch(e){ hideLoading(); toast('Erro: '+e.message,'error') }
 }
 function filterUsers(q){renderUserList(G.usuarios.filter(u=>u.nome.toLowerCase().includes(q.toLowerCase())||u.email.toLowerCase().includes(q.toLowerCase())))}
 function filterClientes(q){renderClienteList(G.clientes.filter(c=>c.razao_social.toLowerCase().includes(q.toLowerCase())))}
@@ -2590,8 +2660,6 @@ function showSettingsSection(id,el){
   document.getElementById('settAssinatura').style.display=id==='assinatura'?'block':'none'
   const eq=document.getElementById('settEquipe')
   if(eq){ eq.style.display=id==='equipe'?'block':'none'; if(id==='equipe') carregarEquipeTecnica() }
-  const ac=document.getElementById('settAcessos')
-  if(ac) ac.style.display=id==='acessos'?'block':'none'
 }
 
 // ── CRUD da Equipe Técnica ──
