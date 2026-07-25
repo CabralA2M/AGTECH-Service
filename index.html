@@ -150,11 +150,6 @@ input,select,textarea{font-family:inherit}
 .nav-link:hover{color:#fff;background:rgba(255,255,255,.04);border-left-color:rgba(204,34,34,.4)}
 .nav-link.active{color:#fff;background:rgba(204,34,34,.12);border-left-color:var(--red)}
 .nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px}
-/* NIVEL DEV — marcacao visual do que ainda esta em teste */
-.is-beta{position:relative;outline:1.5px dashed #f59e0b;outline-offset:2px;border-radius:6px}
-.is-beta::after{content:'BETA';position:absolute;top:-9px;right:6px;background:#f59e0b;color:#fff;font-size:8px;font-weight:800;letter-spacing:.5px;padding:1px 5px;border-radius:8px;z-index:5;pointer-events:none}
-.dev-badge{background:#7c3aed;color:#fff;font-size:9px;font-weight:800;letter-spacing:.5px;padding:2px 7px;border-radius:10px;margin-left:6px}
-.dev-panel{border:1.5px dashed #7c3aed;border-radius:10px;padding:14px 16px;background:#faf5ff;margin-bottom:14px}
 .sidebar-bottom{padding:14px 22px;border-top:1px solid rgba(255,255,255,.06)}
 .btn-logout{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.35);font-size:12px;font-weight:500;background:none;border:none;width:100%;padding:6px 0;transition:color .2s}
 .btn-logout:hover{color:var(--red)}
@@ -831,7 +826,7 @@ input,select,textarea{font-family:inherit}
       <div class="nav-link" id="nav-relatorios" onclick="nav('relatorios')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Ordens de Serviço
       </div>
-      <div class="nav-link" data-feature="pendencias" id="nav-pendencias" onclick="nav('pendencias')">
+      <div class="nav-link" id="nav-pendencias" onclick="nav('pendencias')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Pendências
         <span class="nav-badge" id="navBadgePend" style="display:none">0</span>
       </div>
@@ -1086,7 +1081,6 @@ input,select,textarea{font-family:inherit}
             <div class="settings-nav-item" onclick="showSettingsSection('assinatura',this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Assinatura</div>
             <div class="settings-nav-item" onclick="showSettingsSection('equipe',this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>Equipe Técnica</div>
             <div class="settings-nav-item nav-admin" onclick="showSettingsSection('acessos',this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Usuários & Clientes</div>
-            <div class="settings-nav-item" data-dev-only onclick="showSettingsSection('dev',this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Desenvolvedor</div>
           </div>
           <div>
             <div class="settings-card" id="settSenha">
@@ -1154,27 +1148,7 @@ input,select,textarea{font-family:inherit}
               </div>
             </div>
 
-            <!-- PAINEL DESENVOLVEDOR (visivel apenas para DEV_EMAILS) -->
-            <div class="settings-card" id="settDev" style="display:none">
-              <div class="settings-card-header">
-                <div class="settings-card-icon" style="background:#7c3aed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
-                <div><div class="settings-card-title">Ambiente do Desenvolvedor</div><div class="settings-card-desc">Funções em teste, ocultas dos demais usuários</div></div>
-              </div>
-              <div class="settings-card-body">
-                <div class="dev-panel">
-                  <div style="font-size:12px;color:#5b21b6;line-height:1.6">
-                    Você está no <b>nível desenvolvedor</b>. Funções marcadas como <b>SÓ DEV</b> aparecem apenas para você,
-                    com o contorno tracejado <span style="color:#f59e0b;font-weight:700">BETA</span>.
-                    Para liberar uma função a todos, altere <code style="background:#fff;padding:1px 5px;border-radius:4px">FEATURES.nomeDaFuncao</code>
-                    para <code style="background:#fff;padding:1px 5px;border-radius:4px">true</code> no código.
-                  </div>
-                </div>
-                <div class="section-divider"><span class="section-divider-label">Funções controladas</span></div>
-                <div id="devFeatureList"></div>
-                <div class="section-divider" style="margin-top:16px"><span class="section-divider-label">Diagnóstico</span></div>
-                <div style="font-size:11px;color:var(--gray-mid);font-family:monospace;line-height:1.8" id="devDiag"></div>
-              </div>
-            </div>
+
           </div>
         </div>
       </div>
@@ -1278,7 +1252,7 @@ input,select,textarea{font-family:inherit}
             </div>
           </div>
         </div>
-        <div style="border:2px solid var(--gray);border-radius:10px;padding:14px;cursor:pointer" id="sigOpcaoRemoto" data-feature="assinaturaRemota" onclick="toggleSigOpcao('remoto')">
+        <div style="border:2px solid var(--gray);border-radius:10px;padding:14px;cursor:pointer" id="sigOpcaoRemoto" onclick="toggleSigOpcao('remoto')">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
             <div style="width:18px;height:18px;border-radius:50%;border:2px solid var(--navy);display:flex;align-items:center;justify-content:center" id="radioRemoto"><div id="radioRemotoFill" style="width:8px;height:8px;border-radius:50%;background:var(--navy);display:none"></div></div>
             <div style="font-size:13px;font-weight:700;color:var(--navy)">Enviar por email</div>
@@ -1364,7 +1338,7 @@ input,select,textarea{font-family:inherit}
       </div>
 
       <!-- Equipe Técnica -->
-      <div class="modal-section" data-feature="equipeTecnica">Equipe Técnica</div>
+      <div class="modal-section">Equipe Técnica</div>
       <div style="font-size:11px;color:var(--gray-mid);margin:-4px 0 8px">Marque quem trabalhou nesta OS. Estes técnicos ficam disponíveis nas jornadas.</div>
       <div id="equipeChecklist" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:6px"></div>
 
@@ -1642,97 +1616,8 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const { createClient } = supabase
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY)
 
-// ============================================================
-// NIVEL DESENVOLVEDOR — acesso exclusivo do dev do sistema
-// ------------------------------------------------------------
-// Funciona como "feature flag": funcoes ainda nao validadas
-// ficam visiveis SOMENTE para os emails listados aqui.
-// Para liberar uma funcao para todos, mude o valor da flag
-// em FEATURES de false para true.
-// ============================================================
-const DEV_EMAILS = ['mcabral.92@outlook.com']
-
-// Catalogo de funcoes controlaveis. 'label' aparece no painel.
-// O valor guardado em FEATURES e a lista de perfis que PODEM ver.
-// [] = ninguem (so o dev) | ['administrador','tecnico',...] = esses perfis
-const FEATURE_CATALOG = [
-  {key:'relatorioTecnico',  label:'Relatório Técnico (RT)',            desc:'Gerar e baixar RT dentro da OS'},
-  {key:'checklists',        label:'Checklists',                        desc:'Adicionar checklists na OS'},
-  {key:'pendencias',        label:'Pendências',                        desc:'Módulo de pendências'},
-  {key:'pdfUnificado',      label:'PDF Unificado (OS+Checklist+RT)',   desc:'Documento único combinado'},
-  {key:'assinaturaRemota',  label:'Assinatura remota por email',       desc:'Enviar link para o cliente assinar'},
-  {key:'equipeTecnica',     label:'Equipe Técnica na OS',              desc:'Selecionar quem trabalhou'},
-  {key:'driveIntegracao',   label:'Integração Google Drive',           desc:'Botão Drive na ficha da OS'},
-  {key:'importarUsuarios',  label:'Importação em massa',               desc:'Importar usuários/clientes'},
-]
-
-const PERFIS = ['administrador','supervisor','tecnico','financeiro','cliente']
-
-// Padrao: tudo liberado para todos, exceto o que ainda esta em teste
-const FEATURES_DEFAULT = {
-  relatorioTecnico:  ['administrador','supervisor','tecnico'],
-  checklists:        ['administrador','supervisor','tecnico'],
-  pendencias:        ['administrador','supervisor','tecnico','financeiro'],
-  pdfUnificado:      [],
-  assinaturaRemota:  [],
-  equipeTecnica:     ['administrador','supervisor','tecnico'],
-  driveIntegracao:   [],
-  importarUsuarios:  [],
-}
-
-let FEATURES = JSON.parse(JSON.stringify(FEATURES_DEFAULT))
 
 // Carrega as flags salvas no banco (sobrescreve o padrao)
-async function carregarFeatures(){
-  try{
-    const {data}=await sb.from('app_config').select('valor').eq('chave','features').maybeSingle()
-    if(data?.valor && Object.keys(data.valor).length){
-      FEATURES={...FEATURES_DEFAULT,...data.valor}
-    }
-  }catch(e){ console.warn('features: usando padrao',e.message) }
-}
-
-async function salvarFeatures(){
-  const {error}=await sb.from('app_config')
-    .upsert({chave:'features',valor:FEATURES,atualizado_em:new Date().toISOString()},{onConflict:'chave'})
-  if(error) throw new Error(error.message)
-}
-
-// O usuario logado e o desenvolvedor?
-function isDev(){
-  const email = (G?.profile?.email || '').toLowerCase()
-  return DEV_EMAILS.includes(email)
-}
-
-// A funcionalidade esta visivel para o usuario atual?
-// O dev SEMPRE ve tudo. Os demais, so se o perfil estiver liberado.
-function featureOn(nome){
-  if(isDev()) return true
-  const perfil=G?.profile?.perfil
-  const permitidos=FEATURES[nome]
-  if(!Array.isArray(permitidos)) return true   // chave desconhecida: nao bloqueia
-  return permitidos.includes(perfil)
-}
-
-// Aplica visibilidade nos elementos marcados no HTML:
-//   <div data-feature="relatorioTecnico"> ... </div>
-//   <div data-dev-only> ... </div>   (so o dev ve)
-function aplicarFeatureFlags(){
-  document.querySelectorAll('[data-feature]').forEach(el=>{
-    el.style.display = featureOn(el.dataset.feature) ? '' : 'none'
-  })
-  document.querySelectorAll('[data-dev-only]').forEach(el=>{
-    el.style.display = isDev() ? '' : 'none'
-  })
-  // Marca o que esta oculto dos demais (so o dev enxerga a marcacao)
-  if(isDev()){
-    document.querySelectorAll('[data-feature]').forEach(el=>{
-      const perms=FEATURES[el.dataset.feature]
-      const restrito=Array.isArray(perms)&&perms.length<PERFIS.length
-      el.classList.toggle('is-beta',restrito)
-    })
-  }
-}
 
 // ============================================================
 // EDGE FUNCTION "admin" — cria/edita usuarios e clientes
@@ -1778,7 +1663,7 @@ async function init() {
   if (!profile || !profile.ativo) { await sb.auth.signOut(); showPage('login'); hideLoading(); return }
   G.profile = profile
   if (profile.primeiro_acesso) { showPage('primeiro-acesso'); initPrimeiroAcesso(); hideLoading(); return }
-  await carregarFeatures(); setupUI(); await loadCaches(); checkAvisosCount(); nav('dashboard'); hideLoading()
+  setupUI(); await loadCaches(); checkAvisosCount(); nav('dashboard'); hideLoading()
 }
 
 async function doLogin() {
@@ -1799,7 +1684,7 @@ async function doLogin() {
   if (!profile || !profile.ativo) { await sb.auth.signOut(); showLoginError('Usuário inativo.'); btn.classList.remove('loading'); btn.disabled = false; return }
   G.profile = profile
   if (profile.primeiro_acesso) { showPage('primeiro-acesso'); initPrimeiroAcesso(); btn.classList.remove('loading'); btn.disabled = false; return }
-  await carregarFeatures(); await setupUI(); await loadCaches(); checkAvisosCount(); btn.classList.remove('loading'); btn.disabled = false; nav('dashboard')
+  await setupUI(); await loadCaches(); checkAvisosCount(); btn.classList.remove('loading'); btn.disabled = false; nav('dashboard')
 }
 function showLoginError(msg) { document.getElementById('loginErrorText').textContent = msg; document.getElementById('loginError').classList.add('show') }
 function toggleLoginPass() { const i=document.getElementById('loginPass'); i.type=i.type==='password'?'text':'password' }
@@ -1850,12 +1735,6 @@ function setupUI() {
   document.getElementById('sigTecnicoNome').textContent=p.nome
   const isAdmin=['administrador','supervisor'].includes(p.perfil)
   document.querySelectorAll('.nav-admin').forEach(el=>el.style.display=isAdmin?'':'none')
-  // Nivel desenvolvedor: mostra o selo no perfil e aplica as feature flags
-  if(isDev()){
-    const rolEl=document.getElementById('sRole')
-    if(rolEl && !rolEl.querySelector('.dev-badge')) rolEl.insertAdjacentHTML('beforeend','<span class="dev-badge">DEV</span>')
-  }
-  aplicarFeatureFlags()
 }
 function nav(page) {
   // Esconder telas de auth
@@ -1881,8 +1760,6 @@ function nav(page) {
   else if(page==='pendencias') loadPendencias()
   else if(page==='usuarios') loadUsuarios()
   else if(page==='configuracoes') initConfiguracoes()
-  // Reaplica as flags (conteudo renderizado dinamicamente)
-  setTimeout(aplicarFeatureFlags,80)
 }
 function showPage(page) {
   // Esconder tudo
@@ -2065,7 +1942,7 @@ async function viewRelatorio(id) {
     <div class="rv-section">
       <div class="rv-section-title">Documentos Técnicos</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
-        <div data-feature="checklists" style="border:2px solid ${listaChecklists.length?'var(--success)':'var(--gray)'};border-radius:10px;padding:14px 16px;background:${listaChecklists.length?'#F0FFF4':'#fff'}">
+        <div style="border:2px solid ${listaChecklists.length?'var(--success)':'var(--gray)'};border-radius:10px;padding:14px 16px;background:${listaChecklists.length?'#F0FFF4':'#fff'}">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
             <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${listaChecklists.length?'var(--success)':'var(--gray-mid)'}">Checklists</div>
             <span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:${listaChecklists.length?'#D4EDDA':'var(--bg)'};color:${listaChecklists.length?'var(--success)':'var(--gray-mid)'};border:1px solid ${listaChecklists.length?'#B7EBCA':'var(--gray)'}">${listaChecklists.length?listaChecklists.length+' ADICIONADO'+(listaChecklists.length>1?'S':''):'PENDENTE'}</span>
@@ -2077,7 +1954,7 @@ async function viewRelatorio(id) {
               </div>`).join('')+`<button class="btn btn-primary" style="font-size:11px;margin-top:10px;width:100%;justify-content:center" onclick="abrirModalEscolherChecklist(${r.id})">+ Adicionar outro checklist</button>`
             :`<div style="font-size:12px;color:var(--gray-mid);margin-bottom:10px">Nenhum checklist adicionado</div><button class="btn btn-primary" style="font-size:12px" onclick="abrirModalEscolherChecklist(${r.id})">+ Adicionar Checklist</button>`}
         </div>
-        <div data-feature="relatorioTecnico" style="border:2px solid ${rt?'var(--success)':'var(--gray)'};border-radius:10px;padding:14px 16px;background:${rt?'#F0FFF4':'#fff'}">
+        <div style="border:2px solid ${rt?'var(--success)':'var(--gray)'};border-radius:10px;padding:14px 16px;background:${rt?'#F0FFF4':'#fff'}">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
             <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${rt?'var(--success)':'var(--gray-mid)'}">Relatório Técnico</div>
             <span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:${rt?'#D4EDDA':'var(--bg)'};color:${rt?'var(--success)':'var(--gray-mid)'};border:1px solid ${rt?'#B7EBCA':'var(--gray)'}">${rt?'GERADO':'PENDENTE'}</span>
@@ -2093,7 +1970,7 @@ async function viewRelatorio(id) {
       <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px" onclick="downloadPdfOS(${r.id})">📄 OS</button>
       ${cl?`<button class="btn btn-ghost" style="font-size:11px;padding:5px 12px" onclick="downloadPdfChecklistById('${cl.id}','${cl.tipo}')">📋 Checklist</button>`:''}
       ${rt?`<button class="btn btn-ghost" style="font-size:11px;padding:5px 12px" onclick="downloadPdfRTById('${rt.id}')">📊 RT</button>`:''}
-      ${cl&&rt?`<button class="btn btn-primary" data-feature="pdfUnificado" style="font-size:11px;padding:5px 12px" onclick="downloadPdfCompleto(${r.id},'${cl.id}','${cl.tipo}','${rt.id}')">📦 Completo</button>`:''}
+      ${cl&&rt?`<button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="downloadPdfCompleto(${r.id},'${cl.id}','${cl.tipo}','${rt.id}')">📦 Completo</button>`:''}
     </div>
     <div class="rv-section">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -2715,8 +2592,6 @@ function showSettingsSection(id,el){
   if(eq){ eq.style.display=id==='equipe'?'block':'none'; if(id==='equipe') carregarEquipeTecnica() }
   const ac=document.getElementById('settAcessos')
   if(ac) ac.style.display=id==='acessos'?'block':'none'
-  const dev=document.getElementById('settDev')
-  if(dev){ dev.style.display=(id==='dev'&&isDev())?'block':'none'; if(id==='dev') renderPainelDev() }
 }
 
 // ── CRUD da Equipe Técnica ──
@@ -2789,78 +2664,6 @@ async function excluirEquipeTecnica(id,nome){
 }
 
 // Painel do desenvolvedor: matriz visual funcao x perfil
-function renderPainelDev(){
-  const box=document.getElementById('devFeatureList'); if(!box) return
-  const rotulos={administrador:'Admin',supervisor:'Superv.',tecnico:'Técnico',financeiro:'Financ.',cliente:'Cliente'}
-  box.innerHTML=`
-    <div style="overflow-x:auto">
-    <table style="width:100%;border-collapse:collapse;font-size:12px">
-      <thead>
-        <tr style="background:var(--bg)">
-          <th style="text-align:left;padding:9px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-mid)">Função</th>
-          ${PERFIS.map(p=>`<th style="padding:9px 6px;font-size:10px;text-transform:uppercase;color:var(--gray-mid);white-space:nowrap">${rotulos[p]}</th>`).join('')}
-        </tr>
-      </thead>
-      <tbody>
-        ${FEATURE_CATALOG.map(f=>{
-          const perms=FEATURES[f.key]||[]
-          return `<tr style="border-bottom:1px solid rgba(0,0,0,.06)">
-            <td style="padding:9px 8px">
-              <div style="font-weight:600;color:var(--navy)">${f.label}</div>
-              <div style="font-size:10px;color:var(--gray-mid)">${f.desc}</div>
-            </td>
-            ${PERFIS.map(p=>`<td style="text-align:center;padding:9px 6px">
-              <input type="checkbox" ${perms.includes(p)?'checked':''}
-                onchange="toggleFeaturePerfil('${f.key}','${p}',this.checked)"
-                style="width:17px;height:17px;accent-color:#7c3aed;cursor:pointer">
-            </td>`).join('')}
-          </tr>`
-        }).join('')}
-      </tbody>
-    </table>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;margin-top:14px">
-      <button class="btn btn-secondary" style="font-size:12px" onclick="salvarPainelDev()">Salvar alterações</button>
-      <button class="btn btn-ghost" style="font-size:12px" onclick="restaurarPadraoDev()">Restaurar padrão</button>
-      <span id="devSaveMsg" style="font-size:11px;color:var(--gray-mid)"></span>
-    </div>
-    <div style="font-size:11px;color:var(--gray-mid);margin-top:10px;line-height:1.6">
-      Desmarque um perfil para <b>ocultar</b> a função dele. Você (desenvolvedor) sempre vê tudo.
-    </div>`
-  const diag=document.getElementById('devDiag')
-  if(diag){
-    diag.innerHTML=[
-      `usuario: ${G?.profile?.email||'-'}`,
-      `perfil: ${G?.profile?.perfil||'-'}`,
-      `funcoes controladas: ${FEATURE_CATALOG.length}`,
-      `versao: V2.0`,
-    ].join('<br>')
-  }
-}
-
-function toggleFeaturePerfil(chave,perfil,on){
-  if(!Array.isArray(FEATURES[chave])) FEATURES[chave]=[]
-  if(on){ if(!FEATURES[chave].includes(perfil)) FEATURES[chave].push(perfil) }
-  else { FEATURES[chave]=FEATURES[chave].filter(p=>p!==perfil) }
-  const msg=document.getElementById('devSaveMsg')
-  if(msg) msg.textContent='alterações não salvas'
-}
-
-async function salvarPainelDev(){
-  const msg=document.getElementById('devSaveMsg')
-  try{
-    showLoading(); await salvarFeatures(); hideLoading()
-    if(msg) msg.textContent='salvo!'
-    toast('Permissões salvas','success')
-    aplicarFeatureFlags()
-  }catch(e){ hideLoading(); toast('Erro: '+e.message,'error') }
-}
-
-async function restaurarPadraoDev(){
-  if(!confirm('Restaurar as permissões padrão?'))return
-  FEATURES=JSON.parse(JSON.stringify(FEATURES_DEFAULT))
-  await salvarPainelDev(); renderPainelDev()
-}
 async function saveSettSenha(){
   const nova=document.getElementById('settNovaSenha').value, conf=document.getElementById('settConfSenha').value, email=document.getElementById('settEmail').value.trim()
   if(nova&&nova!==conf){toast('Senhas nao coincidem','error');return}
