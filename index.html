@@ -448,15 +448,20 @@ input,select,textarea{font-family:inherit}
 .panel-search svg{position:absolute;left:24px;top:50%;transform:translateY(-50%);color:var(--gray-mid);pointer-events:none}
 .item-list{max-height:500px;overflow-y:auto}
 /* Linhas da tela de faturamento */
-.fat-row{display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--bg);border-left:4px solid var(--warning);transition:background .1s}
+.fat-row{display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--bg);border-left:4px solid var(--warning);transition:background .1s,opacity .15s}
 .fat-row:hover{background:#fafbfc}
-.fat-row.pago{border-left-color:var(--success);background:#F6FFF9}
+/* Faturada: fica na lista, mas apagada e com barra verde */
+.fat-row.pago{border-left-color:var(--success);background:#FAFDFB;opacity:.62}
+.fat-row.pago:hover{opacity:1;background:#F6FFF9}
+.fat-row.pago .fat-num,.fat-row.pago .fat-cli{color:var(--gray-mid)}
 .fat-num{font-size:15px;font-weight:800;color:var(--navy);min-width:64px}
 .fat-cli{font-size:13px;font-weight:600;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fat-sub{font-size:11px;color:var(--gray-mid)}
 .fat-tag{font-size:9px;font-weight:800;padding:3px 9px;border-radius:10px;white-space:nowrap;letter-spacing:.4px}
 .fat-tag.aguard{background:#FFF3CD;color:#856404;border:1px solid #FFE69C}
 .fat-tag.ok{background:#D4EDDA;color:#155724;border:1px solid #B7EBCA}
+/* Separador entre os dois grupos */
+.fat-sep{padding:8px 18px;background:var(--bg);font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--gray-mid);border-bottom:1px solid var(--gray)}
 /* Cards de usuarios e clientes */
 .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;padding:14px;max-height:600px;overflow-y:auto}
 .uc-card{border:1.5px solid var(--gray);border-radius:11px;padding:13px 14px;background:#fff;transition:border-color .12s,box-shadow .12s;display:flex;flex-direction:column;gap:9px}
@@ -1089,9 +1094,9 @@ input,select,textarea{font-family:inherit}
             </div>
             <div style="display:flex;gap:7px;align-items:center">
               <select class="filter-select" id="fatFiltro" onchange="loadFaturamento()" style="font-size:12px">
-                <option value="pendentes">A faturar</option>
-                <option value="faturados">Já faturados</option>
-                <option value="todos">Todos</option>
+                <option value="todos">Todas</option>
+                <option value="pendentes">Somente a faturar</option>
+                <option value="faturados">Somente faturadas</option>
               </select>
             </div>
           </div>
@@ -2096,7 +2101,7 @@ async function faturarOS(id){
 // FATURAMENTO — lista para o financeiro/contador
 // ============================================================
 async function loadFaturamento(){
-  const filtro=document.getElementById('fatFiltro')?.value||'pendentes'
+  const filtro=document.getElementById('fatFiltro')?.value||'todos'
   let q=sb.from('relatorios').select('*,clientes(razao_social)').order('numero_os',{ascending:false})
   if(filtro==='pendentes') q=q.eq('status_faturamento','enviado')
   else if(filtro==='faturados') q=q.eq('status_faturamento','faturado')
@@ -2106,16 +2111,28 @@ async function loadFaturamento(){
   const box=document.getElementById('fatList')
   if(error){box.innerHTML=`<div style="padding:26px;text-align:center;font-size:12px;color:var(--red)">Erro: ${esc(error.message)}</div>`;return}
 
-  const lista=data||[]
-  document.getElementById('fatCount').textContent='('+lista.length+')'
-  // Badge no menu = quantas aguardam faturamento
-  const aguardando=lista.filter(r=>r.status_faturamento==='enviado').length
-  const badge=document.getElementById('navBadgeFat')
-  if(badge && filtro!=='faturados'){ badge.textContent=aguardando; badge.style.display=aguardando?'inline-block':'none' }
+  // A faturar sempre no topo; faturadas ficam abaixo (mas continuam na lista)
+  const lista=(data||[]).sort((a,b)=>{
+    const pa=a.status_faturamento==='faturado'?1:0, pb=b.status_faturamento==='faturado'?1:0
+    if(pa!==pb) return pa-pb
+    return (b.numero_os||0)-(a.numero_os||0)
+  })
 
+  const aguardando=lista.filter(r=>r.status_faturamento==='enviado').length
+  const faturadas=lista.filter(r=>r.status_faturamento==='faturado').length
+  document.getElementById('fatCount').textContent=`(${aguardando} a faturar · ${faturadas} faturadas)`
+  const badge=document.getElementById('navBadgeFat')
+  if(badge){ badge.textContent=aguardando; badge.style.display=aguardando?'inline-block':'none' }
+
+  let primeiroPago=true
   box.innerHTML=lista.map(r=>{
     const pago=r.status_faturamento==='faturado'
-    return `<div class="fat-row ${pago?'pago':''}">
+    let sep=''
+    if(pago&&primeiroPago&&aguardando>0&&filtro==='todos'){
+      sep=`<div class="fat-sep">Já faturadas (${faturadas})</div>`
+      primeiroPago=false
+    }
+    return sep+`<div class="fat-row ${pago?'pago':''}">
       <div class="fat-num">${osNum(r)}</div>
       <div style="flex:1;min-width:0">
         <div class="fat-cli">${esc(r.clientes?.razao_social||'—')}</div>
@@ -2127,7 +2144,7 @@ async function loadFaturamento(){
         ? `<button class="btn btn-ghost" style="font-size:11px;padding:5px 11px;white-space:nowrap" onclick="desfazerFaturamento(${r.id})">Desfazer</button>`
         : `<button class="btn btn-success" style="font-size:11px;padding:5px 11px;white-space:nowrap" onclick="faturarOS(${r.id})">✓ Faturado</button>`}
     </div>`
-  }).join('')||`<div style="padding:30px;text-align:center;font-size:13px;color:var(--gray-mid)">${filtro==='pendentes'?'Nenhuma OS aguardando faturamento':'Nenhuma OS encontrada'}</div>`
+  }).join('')||`<div style="padding:30px;text-align:center;font-size:13px;color:var(--gray-mid)">Nenhuma OS encontrada</div>`
 }
 
 // Conta quantas OS aguardam faturamento (badge do menu)
