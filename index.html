@@ -16,6 +16,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
 /* ============================================
@@ -446,6 +447,16 @@ input,select,textarea{font-family:inherit}
 .panel-search input:focus{border-color:var(--red);background:#fff}
 .panel-search svg{position:absolute;left:24px;top:50%;transform:translateY(-50%);color:var(--gray-mid);pointer-events:none}
 .item-list{max-height:500px;overflow-y:auto}
+/* Linhas da tela de faturamento */
+.fat-row{display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--bg);border-left:4px solid var(--warning);transition:background .1s}
+.fat-row:hover{background:#fafbfc}
+.fat-row.pago{border-left-color:var(--success);background:#F6FFF9}
+.fat-num{font-size:15px;font-weight:800;color:var(--navy);min-width:64px}
+.fat-cli{font-size:13px;font-weight:600;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fat-sub{font-size:11px;color:var(--gray-mid)}
+.fat-tag{font-size:9px;font-weight:800;padding:3px 9px;border-radius:10px;white-space:nowrap;letter-spacing:.4px}
+.fat-tag.aguard{background:#FFF3CD;color:#856404;border:1px solid #FFE69C}
+.fat-tag.ok{background:#D4EDDA;color:#155724;border:1px solid #B7EBCA}
 /* Cards de usuarios e clientes */
 .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;padding:14px;max-height:600px;overflow-y:auto}
 .uc-card{border:1.5px solid var(--gray);border-radius:11px;padding:13px 14px;background:#fff;transition:border-color .12s,box-shadow .12s;display:flex;flex-direction:column;gap:9px}
@@ -846,6 +857,10 @@ input,select,textarea{font-family:inherit}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Pendências
         <span class="nav-badge" id="navBadgePend" style="display:none">0</span>
       </div>
+      <div class="nav-link nav-fin" id="nav-faturamento" onclick="nav('faturamento')" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Faturamento
+        <span class="nav-badge" id="navBadgeFat" style="display:none">0</span>
+      </div>
       <div class="nav-section">Conta</div>
       <div class="nav-link" id="nav-configuracoes" onclick="nav('configuracoes')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>Configurações
@@ -1063,6 +1078,32 @@ input,select,textarea{font-family:inherit}
     </div>
 
     <!-- ==================== USUÁRIOS ==================== -->
+    <!-- PÁGINA: FATURAMENTO (financeiro e admin) -->
+    <div id="page-faturamento" style="display:none">
+      <div class="content">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+              Faturamento <span class="panel-count" id="fatCount"></span>
+            </div>
+            <div style="display:flex;gap:7px;align-items:center">
+              <select class="filter-select" id="fatFiltro" onchange="loadFaturamento()" style="font-size:12px">
+                <option value="pendentes">A faturar</option>
+                <option value="faturados">Já faturados</option>
+                <option value="todos">Todos</option>
+              </select>
+            </div>
+          </div>
+          <div style="padding:12px 18px;background:var(--bg);border-bottom:1px solid var(--gray);font-size:11px;color:var(--gray-mid);line-height:1.6">
+            OS encerradas e prontas para cobrança. Visualize o documento, imprima ou baixe, e marque como faturada quando emitir a nota.
+          </div>
+          <div id="fatList"><div style="padding:26px;text-align:center;font-size:12px;color:var(--gray-mid)">Carregando...</div></div>
+        </div>
+      </div>
+      <div class="content-footer">© V2.0 · 2026 A2M System · Agtech Service · Desenvolvido por Matheus Cabral</div>
+    </div>
+
     <div id="page-usuarios" style="display:none">
       <div class="content">
         <div class="two-col">
@@ -1389,6 +1430,29 @@ input,select,textarea{font-family:inherit}
 
 <!-- Modal: Novo Usuário -->
 <!-- Modal: senha temporaria gerada -->
+<!-- Modal: visualizador de PDF -->
+<div class="modal-overlay" id="modalPdfView" onclick="handleOverlayClick(event,'modalPdfView')">
+  <div class="modal" style="max-width:960px;display:flex;flex-direction:column;max-height:94vh">
+    <div class="modal-header">
+      <span class="modal-title" id="modalPdfTitle">Visualizar documento</span>
+      <button class="modal-close" onclick="fecharPdfView()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div style="flex:1;min-height:0;background:#525659;position:relative">
+      <div id="pdfViewLoading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;gap:10px">
+        <div class="spinner" style="width:20px;height:20px;border-width:2px"></div> Gerando documento...
+      </div>
+      <iframe id="pdfViewFrame" style="width:100%;height:70vh;border:none;display:none" title="Pré-visualização"></iframe>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <span style="font-size:11px;color:var(--gray-mid)" id="pdfViewInfo"></span>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" onclick="fecharPdfView()">Fechar</button>
+        <button class="btn btn-danger" id="pdfViewBtnDownload" onclick="baixarPdfView()">⬇ Baixar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay modal-sm" id="modalSenhaTemp" onclick="handleOverlayClick(event,'modalSenhaTemp')">
   <div class="modal modal-sm">
     <div class="modal-header"><span class="modal-title">Acesso criado</span><button class="modal-close" onclick="closeModal('modalSenhaTemp')">&times;</button></div>
@@ -1736,6 +1800,10 @@ function setupUI() {
   document.getElementById('sigTecnicoNome').textContent=p.nome
   const isAdmin=['administrador','supervisor'].includes(p.perfil)
   document.querySelectorAll('.nav-admin').forEach(el=>el.style.display=isAdmin?'':'none')
+  // Faturamento: apenas financeiro e administrador
+  const isFinanceiro=['administrador','financeiro'].includes(p.perfil)
+  document.querySelectorAll('.nav-fin').forEach(el=>el.style.display=isFinanceiro?'':'none')
+  if(isFinanceiro) checkFaturamentoBadge()
 }
 function nav(page) {
   // Esconder telas de auth
@@ -1759,6 +1827,7 @@ function nav(page) {
   if(page==='dashboard') loadDashboard()
   else if(page==='relatorios') loadRelatorios()
   else if(page==='pendencias') loadPendencias()
+  else if(page==='faturamento') loadFaturamento()
   else if(page==='usuarios') loadUsuarios()
   else if(page==='configuracoes') initConfiguracoes()
 }
@@ -1846,8 +1915,8 @@ async function loadRelatorios() {
         </div></div>
         <div class="report-actions">
           <button class="btn-icon view" onclick="viewRelatorio(${r.id})" title="Ver"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-          <button class="btn-icon edit" onclick="openModalRelatorio(${r.id})" title="Editar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-          <button class="btn-icon" onclick="downloadPdfOS(${r.id})" title="PDF" style="color:#1565C0"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>
+          ${r.encerrada?'':`<button class="btn-icon edit" onclick="openModalRelatorio(${r.id})" title="Editar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>`}
+          <button class="btn-icon" onclick="verPdf('os',{relId:${r.id},numero:'${osNum(r)}'})" title="Visualizar PDF" style="color:#1565C0"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>
           ${r.status_faturamento==='pendente'?`<button class="btn-icon" onclick="enviarCobranca(${r.id})" title="Enviar cobranca" style="color:var(--success)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>`:''}
           ${r.status_faturamento==='enviado'&&isFin?`<button class="btn-icon" onclick="faturarOS(${r.id})" title="Faturar" style="color:var(--info)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></button>`:''}
           ${isAdmin?`<button class="btn-icon del" onclick="deleteRelatorio(${r.id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>`:''}
@@ -1914,11 +1983,15 @@ async function viewRelatorio(id) {
     </div>
     <div style="padding:12px 24px;background:#fff;border-bottom:1px solid var(--gray);display:flex;flex-wrap:wrap;gap:8px">
       <button class="btn btn-ghost" onclick="nav('relatorios')">← Voltar</button>
-      <button class="btn btn-ghost" onclick="openModalRelatorio(${r.id})">Editar OS</button>
-      <button class="btn btn-danger" onclick="downloadPdfOS(${r.id})">📄 PDF OS</button>
-      ${r.status_faturamento==='pendente'?`<button class="btn btn-success" onclick="enviarCobranca(${r.id})">Enviar Cobrança</button>`:''}
-      ${r.status_faturamento==='enviado'&&['administrador','financeiro'].includes(G.profile.perfil)?`<button class="btn btn-secondary" onclick="faturarOS(${r.id})">Faturar OS</button>`:''}
+      ${r.encerrada?'':`<button class="btn btn-ghost" onclick="openModalRelatorio(${r.id})">Editar OS</button>`}
+      <button class="btn btn-danger" onclick="verPdf('os',{relId:${r.id},numero:'${osNum(r)}'})">📄 PDF OS</button>
+      ${r.status_faturamento==='pendente'?`<button class="btn btn-success" onclick="enviarCobranca(${r.id})">Encerrar e enviar p/ cobrança</button>`:''}
+      ${r.status_faturamento==='enviado'&&['administrador','financeiro'].includes(G.profile.perfil)?`<button class="btn btn-secondary" onclick="faturarOS(${r.id})">Marcar como faturada</button>`:''}
     </div>
+    ${r.encerrada?`<div style="padding:10px 24px;background:#FFF3CD;border-bottom:1px solid #FFE69C;font-size:12px;color:#856404;display:flex;align-items:center;gap:8px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span><b>OS encerrada</b> em ${fmtDate(r.encerrada_em)} — não pode mais ser editada.</span>
+    </div>`:''}
     <div class="rv-meta-grid">
       <div class="rv-meta-cell"><div class="rv-meta-label">Nº OS</div><div class="rv-meta-value highlight">${osNum(r)}</div></div>
       <div class="rv-meta-cell"><div class="rv-meta-label">Cliente</div><div class="rv-meta-value">${esc(r.clientes?.razao_social||'–')}</div></div>
@@ -1951,7 +2024,7 @@ async function viewRelatorio(id) {
           ${listaChecklists.length
             ? listaChecklists.map(c=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,.06)">
                 <div style="min-width:0"><div style="font-size:12px;font-weight:600;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nomesCL[c.tipo]||c.tipo}</div><div style="font-size:10px;color:var(--gray-mid)">${fmtDate(c.data_checklist||c.criado_em)}</div></div>
-                <button class="btn btn-danger" style="font-size:10px;padding:4px 9px;flex-shrink:0" onclick="downloadPdfChecklistById('${c.id}','${c.tipo}')">PDF</button>
+                <button class="btn btn-danger" style="font-size:10px;padding:4px 9px;flex-shrink:0" onclick="verPdf('checklist',{clId:'${c.id}',clTipo:'${c.tipo}'})">PDF</button>
               </div>`).join('')+`<button class="btn btn-primary" style="font-size:11px;margin-top:10px;width:100%;justify-content:center" onclick="abrirModalEscolherChecklist(${r.id})">+ Adicionar outro checklist</button>`
             :`<div style="font-size:12px;color:var(--gray-mid);margin-bottom:10px">Nenhum checklist adicionado</div><button class="btn btn-primary" style="font-size:12px" onclick="abrirModalEscolherChecklist(${r.id})">+ Adicionar Checklist</button>`}
         </div>
@@ -1961,17 +2034,17 @@ async function viewRelatorio(id) {
             <span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:${rt?'#D4EDDA':'var(--bg)'};color:${rt?'var(--success)':'var(--gray-mid)'};border:1px solid ${rt?'#B7EBCA':'var(--gray)'}">${rt?'GERADO':'PENDENTE'}</span>
           </div>
           ${rt
-            ?`<div style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:4px">Relatório Técnico Formal</div><div style="font-size:11px;color:var(--gray-mid)">${fmtDate(rt.criado_em)}</div><div style="display:flex;gap:6px;margin-top:10px"><button class="btn btn-danger" style="font-size:11px;padding:5px 10px" onclick="downloadPdfRTById('${rt.id}')">PDF</button></div>`
+            ?`<div style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:4px">Relatório Técnico Formal</div><div style="font-size:11px;color:var(--gray-mid)">${fmtDate(rt.criado_em)}</div><div style="display:flex;gap:6px;margin-top:10px"><button class="btn btn-danger" style="font-size:11px;padding:5px 10px" onclick="verPdf('rt',{rtId:'${rt.id}',numero:'${osNum(r)}'})">PDF</button></div>`
             :`<div style="font-size:12px;color:var(--gray-mid);margin-bottom:10px">RT ainda não gerado</div><button class="btn btn-primary" style="font-size:12px" onclick="abrirModalRT(${r.id})">+ Gerar RT</button>`}
         </div>
       </div>
     </div>
     <div style="padding:14px 24px;background:var(--bg);border-bottom:1px solid var(--gray);display:flex;flex-wrap:wrap;gap:8px;align-items:center">
       <span style="font-size:11px;font-weight:700;color:var(--gray-mid);text-transform:uppercase;letter-spacing:.5px">Downloads:</span>
-      <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px" onclick="downloadPdfOS(${r.id})">📄 OS</button>
-      ${cl?`<button class="btn btn-ghost" style="font-size:11px;padding:5px 12px" onclick="downloadPdfChecklistById('${cl.id}','${cl.tipo}')">📋 Checklist</button>`:''}
-      ${rt?`<button class="btn btn-ghost" style="font-size:11px;padding:5px 12px" onclick="downloadPdfRTById('${rt.id}')">📊 RT</button>`:''}
-      ${cl&&rt?`<button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="downloadPdfCompleto(${r.id},'${cl.id}','${cl.tipo}','${rt.id}')">📦 Completo</button>`:''}
+      <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px" onclick="verPdf('os',{relId:${r.id},numero:'${osNum(r)}'})">📄 OS</button>
+      ${cl?`<button class="btn btn-ghost" style="font-size:11px;padding:5px 12px" onclick="verPdf('checklist',{clId:'${cl.id}',clTipo:'${cl.tipo}'})">📋 Checklist</button>`:''}
+      ${rt?`<button class="btn btn-ghost" style="font-size:11px;padding:5px 12px" onclick="verPdf('rt',{rtId:'${rt.id}',numero:'${osNum(r)}'})">📊 RT</button>`:''}
+      ${cl&&rt?`<button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="verPdf('completo',{relId:${r.id},numero:'${osNum(r)}'})">📦 Completo</button>`:''}
     </div>
     <div class="rv-section">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -1987,8 +2060,93 @@ async function viewRelatorio(id) {
   hideLoading()
 }
 
-async function enviarCobranca(id){if(!confirm('Enviar para cobranca?'))return;await sb.from('relatorios').update({status_faturamento:'enviado',enviado_cobranca_em:new Date().toISOString()}).eq('id',id);toast('Enviado!','success');loadRelatorios()}
-async function faturarOS(id){if(!confirm('Marcar como faturada?'))return;await sb.from('relatorios').update({status_faturamento:'faturado',faturado_em:new Date().toISOString(),faturado_por:G.profile.id}).eq('id',id);toast('Faturada!','success');loadRelatorios()}
+async function enviarCobranca(id){
+  const ok=confirm('ENCERRAR esta OS e enviar para cobrança?\n\nApós encerrar, a OS não poderá mais ser editada.\nEla ficará disponível para o financeiro faturar.')
+  if(!ok)return
+  showLoading()
+  const {error}=await sb.from('relatorios').update({
+    status_faturamento:'enviado',
+    enviado_cobranca_em:new Date().toISOString(),
+    encerrada:true,
+    encerrada_em:new Date().toISOString(),
+    encerrada_por:G.profile.id
+  }).eq('id',id)
+  hideLoading()
+  if(error){toast('Erro: '+error.message,'error');return}
+  toast('OS encerrada e enviada para cobrança','success')
+  loadRelatorios()
+}
+
+async function faturarOS(id){
+  if(!confirm('Confirmar que esta OS já foi faturada?'))return
+  showLoading()
+  const {error}=await sb.from('relatorios').update({
+    status_faturamento:'faturado',
+    faturado_em:new Date().toISOString(),
+    faturado_por:G.profile.id
+  }).eq('id',id)
+  hideLoading()
+  if(error){toast('Erro: '+error.message,'error');return}
+  toast('OS marcada como faturada','success')
+  if(document.getElementById('page-faturamento')?.style.display!=='none') loadFaturamento()
+  else loadRelatorios()
+}
+
+// ============================================================
+// FATURAMENTO — lista para o financeiro/contador
+// ============================================================
+async function loadFaturamento(){
+  const filtro=document.getElementById('fatFiltro')?.value||'pendentes'
+  let q=sb.from('relatorios').select('*,clientes(razao_social)').order('numero_os',{ascending:false})
+  if(filtro==='pendentes') q=q.eq('status_faturamento','enviado')
+  else if(filtro==='faturados') q=q.eq('status_faturamento','faturado')
+  else q=q.in('status_faturamento',['enviado','faturado'])
+
+  const {data,error}=await q
+  const box=document.getElementById('fatList')
+  if(error){box.innerHTML=`<div style="padding:26px;text-align:center;font-size:12px;color:var(--red)">Erro: ${esc(error.message)}</div>`;return}
+
+  const lista=data||[]
+  document.getElementById('fatCount').textContent='('+lista.length+')'
+  // Badge no menu = quantas aguardam faturamento
+  const aguardando=lista.filter(r=>r.status_faturamento==='enviado').length
+  const badge=document.getElementById('navBadgeFat')
+  if(badge && filtro!=='faturados'){ badge.textContent=aguardando; badge.style.display=aguardando?'inline-block':'none' }
+
+  box.innerHTML=lista.map(r=>{
+    const pago=r.status_faturamento==='faturado'
+    return `<div class="fat-row ${pago?'pago':''}">
+      <div class="fat-num">${osNum(r)}</div>
+      <div style="flex:1;min-width:0">
+        <div class="fat-cli">${esc(r.clientes?.razao_social||'—')}</div>
+        <div class="fat-sub">${esc(r.titulo||'')} · ${fmtDate(r.data_conclusao)}${r.faturado_em?' · faturado em '+fmtDate(r.faturado_em):''}</div>
+      </div>
+      <span class="fat-tag ${pago?'ok':'aguard'}">${pago?'FATURADO':'A FATURAR'}</span>
+      <button class="btn btn-ghost" style="font-size:11px;padding:5px 11px;white-space:nowrap" onclick="verPdf('completo',{relId:${r.id},numero:'${osNum(r)}'})">📄 Documento</button>
+      ${pago
+        ? `<button class="btn btn-ghost" style="font-size:11px;padding:5px 11px;white-space:nowrap" onclick="desfazerFaturamento(${r.id})">Desfazer</button>`
+        : `<button class="btn btn-success" style="font-size:11px;padding:5px 11px;white-space:nowrap" onclick="faturarOS(${r.id})">✓ Faturado</button>`}
+    </div>`
+  }).join('')||`<div style="padding:30px;text-align:center;font-size:13px;color:var(--gray-mid)">${filtro==='pendentes'?'Nenhuma OS aguardando faturamento':'Nenhuma OS encontrada'}</div>`
+}
+
+// Conta quantas OS aguardam faturamento (badge do menu)
+async function checkFaturamentoBadge(){
+  if(!['administrador','financeiro'].includes(G.profile?.perfil))return
+  const {count}=await sb.from('relatorios').select('id',{count:'exact',head:true}).eq('status_faturamento','enviado')
+  const badge=document.getElementById('navBadgeFat')
+  if(badge){ badge.textContent=count||0; badge.style.display=count?'inline-block':'none' }
+}
+async function desfazerFaturamento(id){
+  if(!confirm('Desmarcar esta OS como faturada?'))return
+  showLoading()
+  const {error}=await sb.from('relatorios').update({
+    status_faturamento:'enviado', faturado_em:null, faturado_por:null
+  }).eq('id',id)
+  hideLoading()
+  if(error){toast('Erro: '+error.message,'error');return}
+  toast('Faturamento desfeito','info'); loadFaturamento()
+}
 async function deleteRelatorio(id){if(!confirm('Excluir esta OS?'))return;await sb.from('relatorios').delete().eq('id',id);toast('Excluida','info');loadRelatorios()}
 
 async function openModalRelatorio(id=null) {
@@ -2000,6 +2158,7 @@ async function openModalRelatorio(id=null) {
     showLoading()
     const {data:r}=await sb.from('relatorios').select('*,jornadas(*),pendencias(*)').eq('id',id).single()
     hideLoading(); if(!r){toast('Erro','error');return}
+    if(r.encerrada){toast('Esta OS está encerrada e não pode ser editada','error');return}
     document.getElementById('modalRelatorioTitle').textContent='Editar OS Nº '+osNum(r)
     tecnicoSel=r.tecnico_id||G.profile.id
     assinaturaSalvaOS=r.assinatura_tecnico||null
@@ -2254,7 +2413,7 @@ async function saveRelatorio(){
   for(const [num,file] of Object.entries(G.anexFiles)){const path=`relatorios/${relId}/anex_${num}_${Date.now()}`;const {data:up}=await sb.storage.from('arquivos').upload(path,file,{upsert:true});if(up){const {data:url}=sb.storage.from('arquivos').getPublicUrl(path);await sb.from('relatorio_arquivos').insert({relatorio_id:relId,tipo:'anexo',ordem:parseInt(num),caminho_arquivo:url.publicUrl,nome_original:file.name})}}
   hideLoading(); closeModal('modalRelatorio'); toast(id?'OS atualizada!':('OS Nº '+osNum(novoReg)+' criada!'),'success'); loadRelatorios()
 }
-async function downloadPdfOS(id){
+async function downloadPdfOS(id,retornar=false){
   showLoading()
   const {data:r}=await sb.from('relatorios').select('*,clientes(*),usuarios!tecnico_id(*),pendencias(*),jornadas(*),relatorio_arquivos(*)').eq('id',id).single()
   if(!r){hideLoading();toast('Erro','error');return}
@@ -2395,6 +2554,7 @@ async function downloadPdfOS(id){
   doc.setDrawColor(150); doc.line(M+3,y+22,M+sw-3,y+22); doc.line(M+sw+13,y+22,M+sw*2+7,y+22)
   const pc=doc.internal.getNumberOfPages()
   for(let p=1;p<=pc;p++){doc.setPage(p);doc.setFillColor(26,35,50);doc.rect(0,287,210,10,'F');doc.setTextColor(150);doc.setFontSize(7);doc.text('© V2.0 · 2026 A2M System · Agtech Service · Desenvolvido por Matheus Cabral',M,293);doc.text('Pagina '+p+'/'+pc,W-M,293,{align:'right'})}
+  if(retornar) return doc.output('arraybuffer')
   doc.save(`OS_${osNum(r)}_${(r.titulo||'relatorio').substring(0,30).replace(/\s+/g,'_')}.pdf`); hideLoading(); toast('PDF gerado!','success')
 }
 
@@ -4681,6 +4841,7 @@ async function checkAvisosCount(){
 let G_clCurrentRelId=null, G_clCurrentTipo=null
 
 function abrirModalEscolherChecklist(relId){
+  if(G.currentRel?.encerrada){toast('OS encerrada — não é possível adicionar documentos','error');return}
   G_clCurrentRelId=relId; G_clCurrentTipo=null
   const tipos=[
     {id:'em',nome:'EM — Engel Elétrica',desc:'Preventiva elétrica'},
@@ -4718,9 +4879,9 @@ function abrirChecklistSelecionado(){
   let html=`<input type="hidden" id="clOS-relId" value="${G_clCurrentRelId}">`
   html+=`<div style="padding:12px 18px;background:var(--bg);border-bottom:1px solid var(--gray);display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:4px">`
   html+=`<div class="form-group"><label class="form-label">Cliente</label><input class="form-input" id="clOS-cli" type="text" value="${esc(os?.clientes?.razao_social||'')}" readonly style="background:#f8f9fa"></div>`
-  html+=`<div class="form-group"><label class="form-label">Modelo</label><input class="form-input" id="clOS-mod" type="text" value="${esc(os?.nome_interno||'')}"></div>`
+  html+=`<div class="form-group"><label class="form-label">Modelo</label><input class="form-input" id="clOS-mod" type="text" value="${esc([os?.tipo_equipamento,os?.nome_interno].filter(Boolean).join(' ')||os?.nome_interno||'')}"></div>`
   html+=`<div class="form-group"><label class="form-label">Nº de Série</label><input class="form-input" id="clOS-ser" type="text" value="${esc(os?.numero_serie||'')}"></div>`
-  html+=`<div class="form-group"><label class="form-label">Data</label><input class="form-input" id="clOS-data" type="date" value="${new Date().toISOString().split('T')[0]}"></div>`
+  html+=`<div class="form-group"><label class="form-label">Data</label><input class="form-input" id="clOS-data" type="date" value="${os?.data_conclusao||new Date().toISOString().split('T')[0]}"></div>`
   html+=`<div class="form-group" style="grid-column:span 2"><label class="form-label">Horímetro</label><input class="form-input" id="clOS-hor" type="text"></div>`
   html+=`</div>`
   // Tabela de itens
@@ -4752,7 +4913,8 @@ async function salvarChecklistOS(){
     panel.querySelectorAll('tbody tr').forEach((tr,i)=>{const s=tr.querySelector('.ok-btn.s')?'S':tr.querySelector('.ok-btn.n')?'N':tr.querySelector('.ok-btn.na')?'NA':null;const obs=tr.querySelector('.cl-obs-input')?.value||'';if(s)itens[i]={status:s,obs}})
   }
   const os=G.currentRel
-  const payload={tipo:t,relatorio_id:relId,cliente_id:os?.cliente_id||null,modelo_maquina:document.getElementById('clOS-mod')?.value,numero_serie:document.getElementById('clOS-ser')?.value,horimetro:document.getElementById('clOS-hor')?.value,tecnicos:G.profile.nome,data_checklist:document.getElementById('clOS-data')?.value,dados:itens,observacoes:document.getElementById('clOS-obs')?.value}
+  const equipeOS=nomesEquipe(os?.equipe_ids||[])
+  const payload={tipo:t,relatorio_id:relId,cliente_id:os?.cliente_id||null,modelo_maquina:document.getElementById('clOS-mod')?.value,numero_serie:document.getElementById('clOS-ser')?.value,horimetro:document.getElementById('clOS-hor')?.value,tecnicos:equipeOS.length?equipeOS.join(', '):G.profile.nome,data_checklist:document.getElementById('clOS-data')?.value,dados:itens,observacoes:document.getElementById('clOS-obs')?.value}
   if(t!=='calib'){for(let i=1;i<=4;i++) payload['paralelismo_'+i]=parseFloat(panel.querySelector('#par-'+t+'-'+i)?.value?.replace(',','.')||0)}
   if(G.profile.assinatura) payload.assinatura_tecnico=G.profile.assinatura
   // Auto-criar pendências para itens N → Murilo
@@ -4788,7 +4950,7 @@ async function salvarRomiChecklistOS(tipo,relId){
   toast('Checklist ROMI salvo!','success'); closeModal('modalChecklistOS'); viewRelatorio(relId)
 }
 
-async function downloadPdfChecklistById(clId,tipo){
+async function downloadPdfChecklistById(clId,tipo,retornar=false){
   showLoading()
   const {data:cl}=await sb.from('checklists').select('*,clientes(razao_social)').eq('id',clId).single()
   if(!cl){hideLoading();toast('Checklist não encontrado','error');return}
@@ -4804,6 +4966,7 @@ async function downloadPdfChecklistById(clId,tipo){
   const rows=Object.entries(dados).map(([idx,v])=>[parseInt(idx)+1,v.obs||'',v.status||'–'])
   doc.autoTable({startY:y,margin:{left:M,right:M},head:[['Nº','Observação','Status']],body:rows,headStyles:{fillColor:[26,35,50],textColor:255,fontSize:8},styles:{fontSize:8,cellPadding:2},didParseCell:d=>{if(d.section==='body'&&d.column.index===2){if(d.cell.raw==='S'||d.cell.raw==='SIM') d.cell.styles.textColor=[26,138,74];else if(d.cell.raw==='N'||d.cell.raw==='NAO') d.cell.styles.textColor=[204,34,34];else if(d.cell.raw==='NA') d.cell.styles.textColor=[212,137,10]}}});
   doc.setFillColor(26,35,50);doc.rect(0,285,210,12,'F');doc.setTextColor(150);doc.setFontSize(7);doc.text('© V2.0 · 2026 A2M System · Agtech Service',M,292)
+  if(retornar) return doc.output('arraybuffer')
   doc.save(`Checklist_${tipo.toUpperCase()}_${cl.numero_serie||'sem_serie'}.pdf`); hideLoading(); toast('PDF gerado!','success')
 }
 
@@ -4811,25 +4974,29 @@ async function downloadPdfChecklistById(clId,tipo){
 // RT VINCULADO À OS
 // ============================================================
 async function abrirModalRT(relId){
+  if(G.currentRel?.encerrada){toast('OS encerrada — não é possível adicionar documentos','error');return}
   G_clCurrentRelId=relId
   const os=G.currentRel
-  // Carregar usuários ativos para seletor de equipe
-  const {data:users}=await sb.from('usuarios').select('id,nome,perfil').eq('ativo',true).order('nome')
-  document.getElementById('modalRTOSBody').innerHTML=buildRTFormParaOS(os, users||[])
+  // Equipe técnica cadastrada (não usuários do sistema)
+  if(!G.equipe||!G.equipe.length){
+    const {data}=await sb.from('equipe_tecnica').select('*').eq('ativo',true).order('nome')
+    G.equipe=data||[]
+  }
+  document.getElementById('modalRTOSBody').innerHTML=buildRTFormParaOS(os, G.equipe||[])
   openModal('modalRTOS')
 }
 
-function buildRTFormParaOS(os, users=[]){
-  // Responsável técnico da OS pré-selecionado
-  const respId=os?.tecnico_id||''
+function buildRTFormParaOS(os, equipe=[]){
+  // Vem pré-marcada a equipe que foi selecionada na OS
+  const jaNaOS=os?.equipe_ids||[]
   const equipeSel=`
     <div style="padding:12px 18px;border-bottom:1px solid var(--gray)">
       <label class="form-label">Equipe Técnica *</label>
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:6px" id="rtOS-equipe-grid">
-        ${users.map(u=>`<label style="display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--gray);border-radius:7px;cursor:pointer;font-size:12px;font-weight:500">
-          <input type="checkbox" name="rtOS-equipe" value="${u.nome}" ${u.id==respId?'checked':''} style="accent-color:var(--navy)">
-          ${esc(u.nome)} <span style="font-size:10px;color:var(--gray-mid)">(${u.perfil})</span>
-        </label>`).join('')}
+        ${equipe.length?equipe.map(u=>`<label style="display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--gray);border-radius:7px;cursor:pointer;font-size:12px;font-weight:500">
+          <input type="checkbox" name="rtOS-equipe" value="${esc(u.nome)}" ${jaNaOS.includes(u.id)?'checked':''} style="accent-color:var(--navy)">
+          ${esc(u.nome)}${u.cargo?` <span style="font-size:10px;color:var(--gray-mid)">(${esc(u.cargo)})</span>`:''}
+        </label>`).join(''):'<div style="font-size:12px;color:var(--gray-mid)">Nenhum técnico cadastrado. Cadastre em Configurações → Equipe Técnica.</div>'}
       </div>
     </div>`
   return `
@@ -4837,7 +5004,8 @@ function buildRTFormParaOS(os, users=[]){
   ${equipeSel}
   <div style="padding:12px 18px;background:var(--bg);border-bottom:1px solid var(--gray);display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
     <div class="form-group"><label class="form-label">Cliente</label><input class="form-input" id="rtOS-cli" type="text" value="${esc(os?.clientes?.razao_social||'')}" readonly style="background:#f8f9fa"></div>
-    <div class="form-group"><label class="form-label">Equipamento / Objeto</label><input class="form-input" id="rtOS-maq" type="text" value="${esc(os?.nome_interno||os?.tipo_equipamento||'')}"></div>
+    <div class="form-group"><label class="form-label">Equipamento / Objeto</label><input class="form-input" id="rtOS-maq" type="text" value="${esc([os?.tipo_equipamento,os?.nome_interno].filter(Boolean).join(' ')||os?.nome_interno||'')}"></div>
+    <div class="form-group"><label class="form-label">Nº de Série</label><input class="form-input" id="rtOS-serie" type="text" value="${esc(os?.numero_serie||'')}"></div>
     <div class="form-group"><label class="form-label">Período</label><input class="form-input" id="rtOS-per" type="text" value="${fmtDate(os?.data_conclusao)}"></div>
     <div class="form-group"><label class="form-label">Empresa Emissora</label>
       <div class="company-toggle"><button type="button" class="company-option active" id="rtOScompAgtech" onclick="setCompanyRT('agtech')"><div class="company-dot red"></div>Agtech</button><button type="button" class="company-option" id="rtOScompAgquimic" onclick="setCompanyRT('agquimic')"><div class="company-dot blue"></div>AgQuimic</button></div>
@@ -4939,11 +5107,13 @@ async function salvarRTOS(){
   if(!relId){toast('Erro: OS não identificada','error');return}
   const occ=[]; document.getElementById('rtOS-occ-body')?.querySelectorAll('tr').forEach(tr=>{const inp=tr.querySelectorAll('input');if(inp.length>=5&&inp[0].value) occ.push({problema:inp[0].value,causa:inp[1].value,efeito:inp[2].value,acao:inp[3].value,solucao:inp[4].value})})
   const ferrRows=[]; document.getElementById('rtOS-ferr-body')?.querySelectorAll('tr').forEach(tr=>{const inp=tr.querySelectorAll('input');if(inp.length>=2&&inp[0].value) ferrRows.push({descricao:inp[0].value,qtd:inp[1].value})})
+  const serieRT=document.getElementById('rtOS-serie')?.value?.trim()
+  const objetoBase=document.getElementById('rtOS-maq')?.value||''
   const payload={
     relatorio_id:relId,
     cliente_id:G.currentRel?.cliente_id||null,
     periodo_atendimento:document.getElementById('rtOS-per')?.value,
-    objeto_maquina:document.getElementById('rtOS-maq')?.value,
+    objeto_maquina: serieRT && !objetoBase.includes(serieRT) ? `${objetoBase}, série ${serieRT}` : objetoBase,
     empresa_emissora:document.getElementById('rtOS-emp')?.value,
     equipe:[...document.querySelectorAll('input[name="rtOS-equipe"]:checked')].map(c=>c.value).join(', ')||G.profile.nome,
     introducao:document.getElementById('rtOS-intro')?.value,
@@ -4972,7 +5142,7 @@ async function salvarRTOS(){
   toast('RT salvo!','success'); closeModal('modalRTOS'); viewRelatorio(relId)
 }
 
-async function downloadPdfRTById(rtId){
+async function downloadPdfRTById(rtId,retornar=false){
   showLoading()
   const {data:rt}=await sb.from('relatorios_tecnicos').select('*,clientes(razao_social,link_drive),usuarios!responsavel_tecnico_id(nome,assinatura)').eq('id',rtId).single()
   if(!rt){hideLoading();toast('RT não encontrado','error');return}
@@ -5424,14 +5594,124 @@ async function downloadPdfRTById(rtId){
   footerAll()
   const dtArq=(()=>{const dt=rt.criado_em?new Date(rt.criado_em):new Date();return (isNaN(dt)?new Date():dt).toISOString().split('T')[0]})()
   const nomeArq='RT_'+objeto.replace(/[\/\\:*?"<>|\s]+/g,'_').substring(0,30)+'_'+dtArq
+  if(retornar) return doc.output('arraybuffer')
   doc.save(nomeArq+'.pdf')
   hideLoading()
   toast('RT gerado com sucesso!','success')
 }
 
 
+// ============================================================
+// VISUALIZADOR DE PDF — abre o documento em modal antes de baixar
+// ============================================================
+let G_pdfViewBlob=null, G_pdfViewNome='documento.pdf', G_pdfViewUrl=null
+
+// tipo: 'os' | 'checklist' | 'rt' | 'completo'
+async function verPdf(tipo, params={}){
+  const titulos={os:'Ordem de Serviço',checklist:'Checklist',rt:'Relatório Técnico',completo:'Documento Completo'}
+  document.getElementById('modalPdfTitle').textContent=titulos[tipo]||'Documento'
+  document.getElementById('pdfViewInfo').textContent=''
+  const frame=document.getElementById('pdfViewFrame')
+  const load=document.getElementById('pdfViewLoading')
+  frame.style.display='none'; load.style.display='flex'
+  frame.removeAttribute('src')
+  limparPdfViewUrl()
+  openModal('modalPdfView')
+
+  try{
+    let buf=null
+    if(tipo==='os'){
+      buf=await downloadPdfOS(params.relId,true)
+      G_pdfViewNome=`OS_${params.numero||params.relId}.pdf`
+    } else if(tipo==='checklist'){
+      buf=await downloadPdfChecklistById(params.clId,params.clTipo,true)
+      G_pdfViewNome=`Checklist_${(params.clTipo||'').toUpperCase()}.pdf`
+    } else if(tipo==='rt'){
+      buf=await downloadPdfRTById(params.rtId,true)
+      G_pdfViewNome=`RT_${params.numero||params.rtId}.pdf`
+    } else if(tipo==='completo'){
+      buf=await montarPdfCompleto(params.relId)
+      G_pdfViewNome=`OS_${params.numero||params.relId}_COMPLETO.pdf`
+    }
+    hideLoading()
+    if(!buf) throw new Error('Não foi possível gerar o documento')
+
+    G_pdfViewBlob=new Blob([buf],{type:'application/pdf'})
+    G_pdfViewUrl=URL.createObjectURL(G_pdfViewBlob)
+    frame.src=G_pdfViewUrl
+    load.style.display='none'; frame.style.display='block'
+    const kb=Math.round(G_pdfViewBlob.size/1024)
+    document.getElementById('pdfViewInfo').textContent=`${G_pdfViewNome} · ${kb} KB`
+  }catch(e){
+    hideLoading()
+    console.error(e)
+    load.innerHTML=`<div style="color:#fff;text-align:center;font-size:13px">Erro ao gerar o documento<br><span style="opacity:.7;font-size:11px">${esc(e.message||'')}</span></div>`
+    toast('Erro: '+e.message,'error')
+  }
+}
+
+function baixarPdfView(){
+  if(!G_pdfViewBlob){toast('Documento ainda não está pronto','error');return}
+  const a=document.createElement('a')
+  a.href=G_pdfViewUrl; a.download=G_pdfViewNome
+  document.body.appendChild(a); a.click(); document.body.removeChild(a)
+  toast('Download iniciado','success')
+}
+
+function limparPdfViewUrl(){
+  if(G_pdfViewUrl){ URL.revokeObjectURL(G_pdfViewUrl); G_pdfViewUrl=null }
+  G_pdfViewBlob=null
+}
+
+function fecharPdfView(){
+  const frame=document.getElementById('pdfViewFrame')
+  frame.removeAttribute('src')
+  limparPdfViewUrl()
+  closeModal('modalPdfView')
+}
+
+// Monta o PDF unificado e devolve os bytes (usado pelo visualizador e pelo download)
+async function montarPdfCompleto(relId){
+  if(!window.PDFLib) throw new Error('Biblioteca de PDF ainda carregando')
+  const [{data:cls},{data:rts}]=await Promise.all([
+    sb.from('checklists').select('id,tipo').eq('relatorio_id',relId).order('criado_em'),
+    sb.from('relatorios_tecnicos').select('id').eq('relatorio_id',relId).order('criado_em')
+  ])
+  const partes=[]
+  const bufOS=await downloadPdfOS(relId,true); if(bufOS) partes.push(bufOS)
+  for(const c of (cls||[])){
+    try{ const b=await downloadPdfChecklistById(c.id,c.tipo,true); if(b) partes.push(b) }
+    catch(e){ console.warn('checklist '+c.id,e) }
+  }
+  for(const r of (rts||[])){
+    try{ const b=await downloadPdfRTById(r.id,true); if(b) partes.push(b) }
+    catch(e){ console.warn('rt '+r.id,e) }
+  }
+  if(!partes.length) throw new Error('Nenhum documento para unificar')
+  const merged=await PDFLib.PDFDocument.create()
+  for(const buf of partes){
+    const src=await PDFLib.PDFDocument.load(buf)
+    const pgs=await merged.copyPages(src,src.getPageIndices())
+    pgs.forEach(p=>merged.addPage(p))
+  }
+  return await merged.save()
+}
+
 async function downloadPdfCompleto(relId,clId,clTipo,rtId){
-  toast('PDF completo: baixe OS, Checklist e RT separados e una-os.','info')
+  showLoading()
+  try{
+    const {data:os}=await sb.from('relatorios').select('numero_os').eq('id',relId).single()
+    const bytes=await montarPdfCompleto(relId)
+    const blob=new Blob([bytes],{type:'application/pdf'})
+    const url=URL.createObjectURL(blob)
+    const a=document.createElement('a')
+    a.href=url; a.download=`OS_${os?.numero_os||relId}_COMPLETO.pdf`
+    document.body.appendChild(a); a.click(); document.body.removeChild(a)
+    setTimeout(()=>URL.revokeObjectURL(url),2000)
+    hideLoading(); toast('PDF completo gerado','success')
+  }catch(e){
+    hideLoading(); console.error(e); toast('Erro ao unificar: '+e.message,'error')
+  }
 }
 
 // ============================================================
@@ -5485,7 +5765,7 @@ async function confirmarAssinatura(){
 // ============================================================
 
 // Atualizar nav para não incluir checklists e RT
-const pageTitles={dashboard:'Dashboard',relatorios:'Ordens de Serviço','ver-relatorio':'Visualizar OS',pendencias:'Pendências',usuarios:'Usuários & Clientes',configuracoes:'Configurações'}
+const pageTitles={dashboard:'Dashboard',relatorios:'Ordens de Serviço','ver-relatorio':'Visualizar OS',pendencias:'Pendências',faturamento:'Faturamento',usuarios:'Usuários & Clientes',configuracoes:'Configurações'}
 
 
 
