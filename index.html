@@ -992,7 +992,11 @@ input,select,textarea{font-family:inherit}
         <div class="filter-bar">
           <div class="filter-group">
             <div class="filter-label">Cliente</div>
-            <select class="filter-select" id="filtCliente" onchange="loadRelatorios()"><option value="">Todos</option></select>
+            <select class="filter-select" id="filtCliente" onchange="onFiltroClienteChange()"><option value="">Todos</option></select>
+          </div>
+          <div class="filter-group">
+            <div class="filter-label">Máquina</div>
+            <select class="filter-select" id="filtAtivo" onchange="loadRelatorios()"><option value="">Todas</option></select>
           </div>
           <div class="filter-group">
             <div class="filter-label">Tipo Manutenção</div>
@@ -1111,23 +1115,28 @@ input,select,textarea{font-family:inherit}
 
     <div id="page-usuarios" style="display:none">
       <div class="content">
-        <div class="two-col">
-          <div class="panel">
-            <div class="panel-header">
-              <div class="panel-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Usuários <span class="panel-count" id="userCount"></span></div>
-              <button class="btn btn-primary" onclick="openModalUsuario()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Novo</button>
-            </div>
-            <div class="panel-search"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" placeholder="Buscar usuário..." oninput="filterUsers(this.value)"></div>
-            <div class="card-grid" id="userList"><div style="padding:20px;text-align:center;font-size:12px;color:var(--gray-mid)">Carregando...</div></div>
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Usuários <span class="panel-count" id="userCount"></span></div>
+            <button class="btn btn-primary" onclick="openModalUsuario()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Novo usuário</button>
           </div>
-          <div class="panel">
-            <div class="panel-header">
-              <div class="panel-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Clientes <span class="panel-count" id="clienteCount"></span></div>
-              <button class="btn btn-primary" onclick="openModalCliente()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Novo</button>
-            </div>
-            <div class="panel-search"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" placeholder="Buscar cliente..." oninput="filterClientes(this.value)"></div>
-            <div class="card-grid" id="clienteList"><div style="padding:20px;text-align:center;font-size:12px;color:var(--gray-mid)">Carregando...</div></div>
+          <div class="panel-search"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" placeholder="Buscar usuário..." oninput="filterUsers(this.value)"></div>
+          <div class="card-grid" id="userList"><div style="padding:20px;text-align:center;font-size:12px;color:var(--gray-mid)">Carregando...</div></div>
+        </div>
+      </div>
+      <div class="content-footer">© V2.0 · 2026 A2M System · Agtech Service · Desenvolvido por Matheus Cabral</div>
+    </div>
+
+    <!-- ==================== EMPRESAS / ATIVOS ==================== -->
+    <div id="page-empresas" style="display:none">
+      <div class="content">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Empresas <span class="panel-count" id="clienteCount"></span></div>
+            <button class="btn btn-primary" onclick="openModalCliente()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nova empresa</button>
           </div>
+          <div class="panel-search"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" placeholder="Buscar empresa ou máquina..." oninput="filterClientes(this.value)"></div>
+          <div class="card-grid" id="clienteList"><div style="padding:20px;text-align:center;font-size:12px;color:var(--gray-mid)">Carregando...</div></div>
         </div>
       </div>
       <div class="content-footer">© V2.0 · 2026 A2M System · Agtech Service · Desenvolvido por Matheus Cabral</div>
@@ -1142,7 +1151,8 @@ input,select,textarea{font-family:inherit}
             <div class="settings-nav-item active" onclick="showSettingsSection('senha',this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Alterar Senha</div>
             <div class="settings-nav-item" onclick="showSettingsSection('assinatura',this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Assinatura</div>
             <div class="settings-nav-item nav-admin" onclick="showSettingsSection('equipe',this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>Equipe Técnica</div>
-            <div class="settings-nav-item nav-admin" onclick="nav('usuarios')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Usuários & Clientes</div>
+            <div class="settings-nav-item nav-admin" onclick="nav('usuarios')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Usuários</div>
+            <div class="settings-nav-item nav-admin" onclick="nav('empresas')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Empresas & Ativos</div>
           </div>
           <div>
             <div class="settings-card" id="settSenha">
@@ -1345,7 +1355,8 @@ input,select,textarea{font-family:inherit}
       <div class="modal-section">Identificação</div>
       <div class="form-row full"><div class="form-group"><label class="form-label">Título *</label><input class="form-input" id="relTitulo" type="text" placeholder="Ex: Flushing trocado de calor Injetora BMB"></div></div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Cliente *</label><select class="form-select" id="relCliente"><option value="">Selecione...</option></select></div>
+        <div class="form-group"><label class="form-label">Cliente *</label><select class="form-select" id="relCliente" onchange="onClienteOSChange()"><option value="">Selecione...</option></select></div>
+        <div class="form-group"><label class="form-label">Máquina</label><select class="form-select" id="relAtivo" onchange="onAtivoOSChange()"><option value="">Selecione o cliente primeiro</option></select></div>
         <div class="form-group"><label class="form-label">Nome Interno (máquina)</label><input class="form-input" id="relNomeInterno" type="text" placeholder="Ex: BMB Linha 3"></div>
       </div>
       <div class="form-row cols3">
@@ -1434,6 +1445,37 @@ input,select,textarea{font-family:inherit}
 </div>
 
 <!-- Modal: Novo Usuário -->
+<!-- Modal: máquinas / ativos da empresa -->
+<div class="modal-overlay" id="modalAtivos" onclick="handleOverlayClick(event,'modalAtivos')">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-header">
+      <span class="modal-title">Máquinas — <span id="ativosEmpresaNome"></span></span>
+      <button class="modal-close" onclick="closeModal('modalAtivos')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ativoClienteId"><input type="hidden" id="ativoId">
+      <div style="background:var(--bg);border-radius:9px;padding:12px;margin-bottom:14px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-mid);margin-bottom:8px" id="ativoFormTitulo">Nova máquina</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px">
+          <div class="form-group" style="margin:0"><label class="form-label">Nº interno / TAG</label><input class="form-input" id="atTag" placeholder="C-12"></div>
+          <div class="form-group" style="margin:0"><label class="form-label">Tipo</label><input class="form-input" id="atTipo" placeholder="Injetora"></div>
+          <div class="form-group" style="margin:0"><label class="form-label">Fabricante</label><input class="form-input" id="atFab" placeholder="ENGEL"></div>
+          <div class="form-group" style="margin:0"><label class="form-label">Modelo</label><input class="form-input" id="atModelo" placeholder="DUO 550/500"></div>
+          <div class="form-group" style="margin:0"><label class="form-label">Nº de Série</label><input class="form-input" id="atSerie" placeholder="186 722"></div>
+          <div class="form-group" style="margin:0"><label class="form-label">Ano</label><input class="form-input" id="atAno" type="number" placeholder="2012"></div>
+        </div>
+        <div style="display:flex;gap:7px;margin-top:10px">
+          <button class="btn btn-secondary" style="font-size:12px" onclick="salvarAtivo()" id="atBtnSalvar">Adicionar máquina</button>
+          <button class="btn btn-ghost" style="font-size:12px;display:none" onclick="cancelarEdicaoAtivo()" id="atBtnCancelar">Cancelar</button>
+        </div>
+      </div>
+      <div class="section-divider"><span class="section-divider-label">Máquinas cadastradas</span></div>
+      <div id="ativosLista"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modalAtivos')">Fechar</button></div>
+  </div>
+</div>
+
 <!-- Modal: senha temporaria gerada -->
 <!-- Modal: visualizador de PDF -->
 <div class="modal-overlay" id="modalPdfView" onclick="handleOverlayClick(event,'modalPdfView')">
@@ -1820,7 +1862,7 @@ function nav(page) {
   document.getElementById('app-layout').style.display = 'flex'
   document.getElementById('app-layout').classList.add('active')
   // Esconder todas as sub-páginas internas
-  ;['dashboard','relatorios','ver-relatorio','pendencias','faturamento','usuarios','configuracoes'].forEach(p=>{
+  ;['dashboard','relatorios','ver-relatorio','pendencias','faturamento','usuarios','empresas','configuracoes'].forEach(p=>{
     const el=document.getElementById('page-'+p); if(el) el.style.display='none'
   })
   const t=document.getElementById('page-'+page); if(t) t.style.display='block'
@@ -1834,6 +1876,7 @@ function nav(page) {
   else if(page==='pendencias') loadPendencias()
   else if(page==='faturamento') loadFaturamento()
   else if(page==='usuarios') loadUsuarios()
+  else if(page==='empresas') loadEmpresas()
   else if(page==='configuracoes') initConfiguracoes()
 }
 function showPage(page) {
@@ -1894,9 +1937,11 @@ async function loadDashboard() {
 }
 async function loadRelatorios() {
   const cli=document.getElementById('filtCliente')?.value, man=document.getElementById('filtManutencao')?.value
+  const atv=document.getElementById('filtAtivo')?.value
   const sta=document.getElementById('filtStatus')?.value, bus=document.getElementById('filtBusca')?.value?.toLowerCase()
   let q=sb.from('relatorios').select('*,clientes(razao_social),usuarios!tecnico_id(nome),pendencias(id,status,criticidade,data_limite,descricao)').order('criado_em',{ascending:false})
   if(cli) q=q.eq('cliente_id',cli); if(man) q=q.eq('tipo_manutencao',man); if(sta) q=q.eq('status_faturamento',sta)
+  if(atv) q=q.eq('ativo_id',atv)
   const {data,error}=await q
   if(error){toast('Erro: '+error.message,'error');console.error('loadRelatorios error:',error);return}
   let list=data||[]
@@ -2190,6 +2235,7 @@ async function openModalRelatorio(id=null) {
     document.getElementById('relData').value=r.data_conclusao||''
     document.getElementById('relDescricao').value=r.descricao||''
     // Equipe Técnica da OS (precisa vir ANTES das jornadas)
+    await onClienteOSChange(r.ativo_id||'')
     await renderEquipeChecklist(r.equipe_ids||[])
     if(r.pendencias?.length){
       const p=r.pendencias[0]; document.getElementById('relTemPend').checked=true; togglePendFields()
@@ -2203,6 +2249,7 @@ async function openModalRelatorio(id=null) {
     document.getElementById('modalRelBtnsLeft').innerHTML=`<button class="btn btn-danger" onclick="downloadPdfOS(${id});closeModal('modalRelatorio')">PDF</button>`
   } else {
     document.getElementById('relData').value=new Date().toISOString().split('T')[0]
+    await onClienteOSChange('')
     await renderEquipeChecklist([])
     addJornadaField()
   }
@@ -2405,7 +2452,7 @@ async function saveRelatorio(){
   if(!titulo){toast('Titulo obrigatorio','error');return}; if(!clienteId){toast('Selecione cliente','error');return}
   showLoading(); const id=document.getElementById('relId').value
   const tecSel=tecnicoSelecionado()
-  const payload={titulo,empresa_emissora:document.getElementById('relEmpresa').value,cliente_id:clienteId,nome_interno:document.getElementById('relNomeInterno').value,tipo_chamada:document.getElementById('relTipoChamada').value,tipo_equipamento:document.getElementById('relTipoEquip').value,tipo_manutencao:document.getElementById('relTipoManut').value,numero_serie:document.getElementById('relNumSerie').value,data_conclusao:document.getElementById('relData').value,descricao:document.getElementById('relDescricao').value,tecnico_id:tecSel.id,equipe_ids:G_equipeSel,nome_cliente_assina:document.getElementById('sigClienteNome').value}
+  const payload={titulo,empresa_emissora:document.getElementById('relEmpresa').value,cliente_id:clienteId,nome_interno:document.getElementById('relNomeInterno').value,tipo_chamada:document.getElementById('relTipoChamada').value,tipo_equipamento:document.getElementById('relTipoEquip').value,tipo_manutencao:document.getElementById('relTipoManut').value,numero_serie:document.getElementById('relNumSerie').value,data_conclusao:document.getElementById('relData').value,descricao:document.getElementById('relDescricao').value,tecnico_id:tecSel.id,ativo_id:document.getElementById('relAtivo')?.value||null,equipe_ids:G_equipeSel,nome_cliente_assina:document.getElementById('sigClienteNome').value}
   // Assinatura do tecnico: manual (canvas) tem prioridade; senao usa a salva do usuario
   const sigTecCanvas=document.getElementById('sigTecnicoCanvas')
   const canvasVisivel=document.getElementById('sigTecnicoCanvasWrap')?.style.display!=='none'
@@ -2640,11 +2687,179 @@ async function togglePendEmail(id,val){await sb.from('pendencias').update({email
 async function loadUsuarios(){
   const [{data:users},{data:clientes}]=await Promise.all([sb.from('usuarios').select('*').order('nome'),sb.from('clientes').select('*').order('razao_social')])
   G.usuarios=(users||[]).filter(u=>u.perfil!=='cliente'); G.clientes=clientes||[]
-  document.getElementById('userCount').textContent='('+G.usuarios.length+')'
-  document.getElementById('clienteCount').textContent='('+G.clientes.length+')'
-  renderUserList(G.usuarios); renderClienteList(G.clientes)
-  const ucSel=document.getElementById('ucCliente'); ucSel.innerHTML='<option value="">Selecione...</option>'
-  G.clientes.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.razao_social;ucSel.appendChild(o)})
+  const uc=document.getElementById('userCount'); if(uc) uc.textContent='('+G.usuarios.length+')'
+  renderUserList(G.usuarios)
+  const ucSel=document.getElementById('ucCliente')
+  if(ucSel){ ucSel.innerHTML='<option value="">Selecione...</option>'
+    G.clientes.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.razao_social;ucSel.appendChild(o)}) }
+}
+
+// Filtro de máquinas na lista de OS — depende do cliente escolhido
+async function onFiltroClienteChange(){
+  const cli=document.getElementById('filtCliente')?.value
+  const sel=document.getElementById('filtAtivo')
+  if(sel){
+    if(!cli){ sel.innerHTML='<option value="">Todas</option>' }
+    else{
+      await carregarAtivosCache()
+      const lista=ativosDoCliente(cli)
+      sel.innerHTML='<option value="">Todas</option>'+lista.map(a=>`<option value="${a.id}">${esc(descAtivo(a))}</option>`).join('')
+    }
+  }
+  loadRelatorios()
+}
+
+// ── Seletor de máquina na OS (filtrado pelo cliente) ──
+async function carregarAtivosCache(){
+  if(G.ativos&&G.ativos.length) return G.ativos
+  const {data}=await sb.from('ativos').select('*').eq('ativo',true).order('tag')
+  G.ativos=data||[]
+  return G.ativos
+}
+
+async function onClienteOSChange(selecionarAtivoId=''){
+  const clienteId=document.getElementById('relCliente')?.value
+  const sel=document.getElementById('relAtivo'); if(!sel) return
+  if(!clienteId){ sel.innerHTML='<option value="">Selecione o cliente primeiro</option>'; return }
+  await carregarAtivosCache()
+  const lista=ativosDoCliente(clienteId)
+  sel.innerHTML='<option value="">— Não vinculada —</option>'+
+    lista.map(a=>`<option value="${a.id}">${esc(descAtivo(a))}</option>`).join('')
+  if(!lista.length) sel.innerHTML='<option value="">Nenhuma máquina cadastrada para este cliente</option>'
+  if(selecionarAtivoId) sel.value=selecionarAtivoId
+}
+
+// Ao escolher a máquina, preenche automaticamente os campos do equipamento
+function onAtivoOSChange(){
+  const id=document.getElementById('relAtivo')?.value
+  if(!id) return
+  const a=(G.ativos||[]).find(x=>x.id===id); if(!a) return
+  const set=(campo,valor)=>{const el=document.getElementById(campo);if(el&&valor)el.value=valor}
+  set('relNomeInterno',a.tag)
+  set('relNumSerie',a.numero_serie)
+  if(a.tipo){
+    const te=document.getElementById('relTipoEquip')
+    if(te&&[...te.options].some(o=>o.value===a.tipo||o.text===a.tipo)) te.value=a.tipo
+  }
+}
+
+// ── CRUD de ATIVOS (máquinas da empresa) ──
+async function abrirAtivos(clienteId,nomeEmpresa){
+  document.getElementById('ativoClienteId').value=clienteId
+  document.getElementById('ativosEmpresaNome').textContent=nomeEmpresa
+  cancelarEdicaoAtivo()
+  await carregarAtivos(clienteId)
+  openModal('modalAtivos')
+}
+
+async function carregarAtivos(clienteId){
+  const {data,error}=await sb.from('ativos').select('*').eq('cliente_id',clienteId).order('tag')
+  if(error){toast('Erro: '+error.message,'error');return}
+  // mantém o cache global sincronizado
+  G.ativos=(G.ativos||[]).filter(a=>a.cliente_id!==clienteId).concat(data||[])
+  const box=document.getElementById('ativosLista'); if(!box) return
+  box.innerHTML=(data||[]).map(a=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(0,0,0,.06);${a.ativo===false?'opacity:.5':''}">
+      <div style="width:34px;height:34px;border-radius:8px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${esc((a.tag||'?').substring(0,4))}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:var(--navy)">${esc([a.fabricante,a.modelo].filter(Boolean).join(' ')||a.tipo||'Sem modelo')}</div>
+        <div style="font-size:11px;color:var(--gray-mid)">${[a.tipo,a.numero_serie?'Série '+a.numero_serie:'',a.ano].filter(Boolean).map(esc).join(' · ')||'—'}</div>
+      </div>
+      <button class="btn-icon edit" title="Editar" onclick='editarAtivo(${JSON.stringify(a).replace(/'/g,"\\'").replace(/"/g,'&quot;')})'>✏</button>
+      <button class="btn-icon" title="${a.ativo===false?'Reativar':'Desativar'}" onclick="alternarAtivo('${a.id}',${a.ativo===false})">${a.ativo===false?'✔':'🚫'}</button>
+      <button class="btn-icon del" title="Excluir" onclick="excluirAtivo('${a.id}','${esc(a.tag||a.modelo||'').replace(/'/g,"")}')">🗑</button>
+    </div>`).join('')||'<div style="padding:14px;text-align:center;font-size:12px;color:var(--gray-mid)">Nenhuma máquina cadastrada</div>'
+}
+
+async function salvarAtivo(){
+  const clienteId=document.getElementById('ativoClienteId').value
+  const id=document.getElementById('ativoId').value
+  const tag=document.getElementById('atTag').value.trim()
+  const modelo=document.getElementById('atModelo').value.trim()
+  if(!tag&&!modelo){toast('Informe ao menos a TAG ou o modelo','error');return}
+  const anoVal=parseInt(document.getElementById('atAno').value)
+  const payload={
+    cliente_id:clienteId,
+    tag:tag||null,
+    tipo:document.getElementById('atTipo').value.trim()||null,
+    fabricante:document.getElementById('atFab').value.trim()||null,
+    modelo:modelo||null,
+    numero_serie:document.getElementById('atSerie').value.trim()||null,
+    ano:isNaN(anoVal)?null:anoVal
+  }
+  showLoading()
+  const {error}= id
+    ? await sb.from('ativos').update({...payload,atualizado_em:new Date().toISOString()}).eq('id',id)
+    : await sb.from('ativos').insert(payload)
+  hideLoading()
+  if(error){toast('Erro: '+error.message,'error');return}
+  toast(id?'Máquina atualizada!':'Máquina adicionada!','success')
+  cancelarEdicaoAtivo()
+  await carregarAtivos(clienteId)
+  renderClienteList(G.clientes)
+}
+
+function editarAtivo(a){
+  document.getElementById('ativoId').value=a.id
+  document.getElementById('atTag').value=a.tag||''
+  document.getElementById('atTipo').value=a.tipo||''
+  document.getElementById('atFab').value=a.fabricante||''
+  document.getElementById('atModelo').value=a.modelo||''
+  document.getElementById('atSerie').value=a.numero_serie||''
+  document.getElementById('atAno').value=a.ano||''
+  document.getElementById('ativoFormTitulo').textContent='Editando máquina'
+  document.getElementById('atBtnSalvar').textContent='Salvar'
+  document.getElementById('atBtnCancelar').style.display='inline-flex'
+}
+
+function cancelarEdicaoAtivo(){
+  ['ativoId','atTag','atTipo','atFab','atModelo','atSerie','atAno'].forEach(i=>{const el=document.getElementById(i);if(el)el.value=''})
+  const t=document.getElementById('ativoFormTitulo'); if(t) t.textContent='Nova máquina'
+  const b=document.getElementById('atBtnSalvar'); if(b) b.textContent='Adicionar máquina'
+  const c=document.getElementById('atBtnCancelar'); if(c) c.style.display='none'
+}
+
+async function alternarAtivo(id,ativar){
+  showLoading()
+  const {error}=await sb.from('ativos').update({ativo:ativar,atualizado_em:new Date().toISOString()}).eq('id',id)
+  hideLoading()
+  if(error){toast('Erro: '+error.message,'error');return}
+  const clienteId=document.getElementById('ativoClienteId').value
+  await carregarAtivos(clienteId); renderClienteList(G.clientes)
+}
+
+async function excluirAtivo(id,nome){
+  if(!confirm(`Excluir a máquina ${nome}?\n\nAs OS antigas mantêm o histórico.`))return
+  showLoading()
+  const {error}=await sb.from('ativos').delete().eq('id',id)
+  hideLoading()
+  if(error){toast('Erro: '+error.message,'error');return}
+  toast('Máquina excluída','info')
+  const clienteId=document.getElementById('ativoClienteId').value
+  await carregarAtivos(clienteId); renderClienteList(G.clientes)
+}
+
+// ── EMPRESAS & ATIVOS ──
+async function loadEmpresas(){
+  const [{data:clientes},{data:ativos}]=await Promise.all([
+    sb.from('clientes').select('*').order('razao_social'),
+    sb.from('ativos').select('*').order('tag')
+  ])
+  G.clientes=clientes||[]
+  G.ativos=ativos||[]
+  const cc=document.getElementById('clienteCount'); if(cc) cc.textContent='('+G.clientes.length+')'
+  renderClienteList(G.clientes)
+}
+
+// Ativos de uma empresa
+function ativosDoCliente(clienteId){
+  return (G.ativos||[]).filter(a=>a.cliente_id===clienteId&&a.ativo!==false)
+}
+// Descrição curta da máquina (usada em selects e no RT)
+function descAtivo(a){
+  if(!a) return '–'
+  const partes=[a.tag,[a.fabricante,a.modelo].filter(Boolean).join(' ')].filter(Boolean)
+  return partes.join(' · ')||a.numero_serie||'Sem identificação'
 }
 const roleColors={administrador:'linear-gradient(135deg,#CC2222,#E8620A)',supervisor:'linear-gradient(135deg,#6A1B9A,#AB47BC)',tecnico:'linear-gradient(135deg,#1565C0,#42A5F5)',financeiro:'linear-gradient(135deg,#1A8A4A,#43C273)',cliente:'linear-gradient(135deg,#D4890A,#F5C842)'}
 function renderUserList(users){
@@ -2706,9 +2921,17 @@ function renderClienteList(c){
         ${cl.telefone?`<span>Tel: <b>${esc(cl.telefone)}</b></span>`:''}
         ${cl.link_acesso?`<span class="client-link-badge" style="cursor:pointer" onclick="navigator.clipboard.writeText('${cl.link_acesso}').then(()=>toast('Link copiado!','info'))">🔗 Link acesso</span>`:''}
       </div>
+      ${(()=>{const ats=ativosDoCliente(cl.id);return `
+      <div style="border-top:1px solid var(--bg);padding-top:8px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-mid);margin-bottom:5px">Máquinas (${ats.length})</div>
+        ${ats.length
+          ? `<div style="display:flex;flex-wrap:wrap;gap:4px">${ats.slice(0,6).map(a=>`<span style="font-size:10px;padding:2px 7px;border-radius:9px;background:var(--bg);border:1px solid var(--gray);color:var(--navy)">${esc(a.tag||a.modelo||a.numero_serie||'?')}</span>`).join('')}${ats.length>6?`<span style="font-size:10px;color:var(--gray-mid);padding:2px 4px">+${ats.length-6}</span>`:''}</div>`
+          : `<div style="font-size:11px;color:var(--gray-mid)">Nenhuma máquina cadastrada</div>`}
+      </div>`})()}
       <div class="uc-actions">
         <button class="uc-btn" title="Editar" onclick='openModalCliente(${jsonC})'>✏ Editar</button>
-        <button class="uc-btn danger" title="Excluir" onclick='excluirCliente("${cl.id}","${nomeEsc}")'>🗑 Excluir</button>
+        <button class="uc-btn primary" title="Máquinas" onclick='abrirAtivos("${cl.id}","${nomeEsc}")'>⚙ Máquinas</button>
+        <button class="uc-btn danger" title="Excluir" onclick='excluirCliente("${cl.id}","${nomeEsc}")'>🗑</button>
       </div>
     </div>`
   }).join('')||'<div style="padding:20px;text-align:center;font-size:12px;color:var(--gray-mid);grid-column:1/-1">Nenhum cliente</div>'
@@ -5814,7 +6037,7 @@ async function confirmarAssinatura(){
 // ============================================================
 
 // Atualizar nav para não incluir checklists e RT
-const pageTitles={dashboard:'Dashboard',relatorios:'Ordens de Serviço','ver-relatorio':'Visualizar OS',pendencias:'Pendências',faturamento:'Faturamento',usuarios:'Usuários & Clientes',configuracoes:'Configurações'}
+const pageTitles={dashboard:'Dashboard',relatorios:'Ordens de Serviço','ver-relatorio':'Visualizar OS',pendencias:'Pendências',faturamento:'Faturamento',usuarios:'Usuários',empresas:'Empresas & Ativos',configuracoes:'Configurações'}
 
 
 
