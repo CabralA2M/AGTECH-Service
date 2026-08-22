@@ -700,6 +700,77 @@ input,select,textarea{font-family:inherit}
 .cl-type-option-name{font-size:11px;font-weight:700;color:var(--navy);margin-top:4px}
 @media(max-width:600px){.cl-type-grid{grid-template-columns:repeat(2,1fr)}}
 
+/* ============================================================
+   AJUSTES MOBILE — telas que estouravam a largura
+   (Dashboard e Faturamento já cabiam; não são alterados)
+   ============================================================ */
+@media(max-width:600px){
+  /* Cabeçalhos com título + botão: deixa quebrar em duas linhas */
+  .panel-header,.list-header,.modal-footer,.modal-header,.report-card-header{flex-wrap:wrap}
+  .panel-header .btn,.list-header .btn{font-size:12px;padding:6px 11px}
+  .modal-footer{gap:8px}
+  .modal-footer .btn{flex:1;justify-content:center;white-space:nowrap}
+
+  /* Filtros ocupam a linha toda */
+  .filter-bar{padding:12px 14px;gap:8px}
+  .filter-group{min-width:100%}
+
+  /* Cards de OS */
+  .report-card-header{padding:12px 14px 9px;gap:8px}
+  .report-meta{padding:10px 14px;gap:8px}
+  .report-actions{width:100%;justify-content:flex-end;padding-top:4px}
+
+  /* Ficha da OS */
+  .rv-meta-grid,.rv-files-grid,.rv-jornada-body{gap:8px}
+  .os-doc-grid{grid-template-columns:1fr}
+
+  /* Usuários e Empresas */
+  .card-grid{grid-template-columns:1fr;padding:12px;gap:9px}
+  .uc-actions{flex-wrap:wrap}
+  .uc-btn{min-width:74px}
+
+  /* Pendências */
+  .pending-header{padding:12px 14px;flex-wrap:wrap}
+
+  /* Modais ocupam quase a tela inteira */
+  .modal-overlay{padding:8px}
+  .modal{max-width:100%;border-radius:12px}
+  .modal-body{padding:16px 14px}
+  .modal-header{padding:14px 16px}
+  .modal-title{font-size:16px}
+
+  /* Textos longos (email, razão social) não empurram o layout */
+  .uc-name,.uc-sub,.rv-meta-value,.report-title{overflow-wrap:anywhere}
+
+  /* Evita rolagem horizontal acidental */
+  html,body{overflow-x:hidden}
+  img,svg,canvas,table{max-width:100%}
+}
+
+/* Telas bem estreitas (≤ 400px): tudo em coluna única */
+@media(max-width:400px){
+  .content{padding:12px}
+  .report-meta,.rv-meta-grid,.rv-files-grid,.rv-jornada-body,
+  .form-row.cols3,.form-row.cols4{grid-template-columns:1fr}
+  .kpi-grid{grid-template-columns:1fr}
+  .file-grid{grid-template-columns:repeat(2,1fr)}
+  .cl-type-grid{grid-template-columns:1fr}
+  .equipe-grid,#equipeChecklist{grid-template-columns:1fr!important}
+}
+
+/* Grids escritos com style inline dentro dos modais (formulários de
+   RT, checklist e máquinas). Media query só vence estilo inline com
+   !important, por isso o seletor de atributo abaixo. */
+@media(max-width:600px){
+  .modal [style*="repeat(4,1fr)"],
+  .modal [style*="repeat(3,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+}
+@media(max-width:400px){
+  .modal [style*="repeat(4,1fr)"],
+  .modal [style*="repeat(3,1fr)"],
+  .modal [style*="repeat(2,1fr)"]{grid-template-columns:1fr!important}
+}
+
 </style>
 </head>
 <body>
