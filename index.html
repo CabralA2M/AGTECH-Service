@@ -349,6 +349,27 @@ input,select,textarea{font-family:inherit}
 
 /* Jornada */
 .jornada-item{border:1.5px solid var(--gray);border-radius:9px;overflow:hidden;margin-bottom:8px}
+/* --- Jornada redesenhada: blocos claros + totais ao vivo --- */
+.jrn-sec{padding:11px 14px;border-top:1px solid var(--bg)}
+.jrn-sec:first-child{border-top:none}
+.jrn-sec-title{font-size:10px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:var(--gray-mid);display:flex;align-items:center;gap:6px;margin-bottom:9px}
+.jrn-linha{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap}
+.jrn-linha:last-child{margin-bottom:0}
+.jrn-tag{font-size:11px;font-weight:700;color:var(--navy);min-width:52px}
+.jrn-lig{font-size:11px;color:var(--gray-mid)}
+.jrn-in{font-size:13px;padding:6px 9px;border:1.5px solid var(--gray);border-radius:7px;color:var(--text);background:#fff;font-family:inherit}
+.jrn-in:focus{outline:none;border-color:var(--navy)}
+.jrn-in.time{width:106px}
+.jrn-in.km{width:78px}
+.jrn-in.date{width:150px}
+.jrn-total{margin-left:auto;font-size:11px;font-weight:700;color:var(--navy);background:var(--bg);padding:3px 9px;border-radius:11px;white-space:nowrap}
+.jrn-resumo{font-size:11px;color:rgba(255,255,255,.75);display:flex;gap:10px;white-space:nowrap}
+.jrn-resumo b{color:#fff}
+@media(max-width:520px){
+  .jrn-in.time{width:calc(50% - 34px)}
+  .jrn-in.km{width:70px}
+  .jrn-tag{min-width:44px}
+}
 .jornada-item-header{background:var(--navy);padding:9px 13px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
 .jornada-item-title{font-size:13px;font-weight:700;color:#fff;letter-spacing:.3px;display:flex;align-items:center;gap:7px}
 .jornada-item-body{padding:13px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;background:#fff}
@@ -2377,29 +2398,92 @@ function addJornadaField(data=null){
   div.className='jornada-item'; div.id='jornada-'+n
   // equipe daquela jornada: se veio do banco usa a salva, senao usa a equipe da OS
   const equipeJornada = (data&&Array.isArray(data.equipe_ids)) ? data.equipe_ids : [...G_equipeSel]
-  div.innerHTML=`<div class="jornada-item-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'grid':'none'">
+  const hoje=new Date().toISOString().split('T')[0]
+  div.innerHTML=`
+  <div class="jornada-item-header">
     <span class="jornada-item-title">Dia ${n}</span>
-    <button type="button" onclick="event.stopPropagation();document.getElementById('jornada-${n}').remove()" style="background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer">✕</button>
+    <div class="jrn-resumo" id="jrnResumo${n}"></div>
+    <button type="button" title="Remover este dia" onclick="event.stopPropagation();document.getElementById('jornada-${n}').remove()" style="background:none;border:none;color:rgba(255,255,255,.55);cursor:pointer;font-size:15px;margin-left:10px">&times;</button>
   </div>
-  <div class="jornada-item-body">
-    <div class="form-group"><label class="form-label">Data</label><input class="form-input" name="jData${n}" type="date" value="${data?.data||''}"></div>
-    <div class="form-group"><label class="form-label">Manha Inicio</label><input class="form-input" name="jMI${n}" type="time" value="${data?.manha_inicio||''}"></div>
-    <div class="form-group"><label class="form-label">Manha Fim</label><input class="form-input" name="jMF${n}" type="time" value="${data?.manha_fim||''}"></div>
-    <div class="form-group"><label class="form-label">Tarde Inicio</label><input class="form-input" name="jTI${n}" type="time" value="${data?.tarde_inicio||''}"></div>
-    <div class="form-group"><label class="form-label">Tarde Fim</label><input class="form-input" name="jTF${n}" type="time" value="${data?.tarde_fim||''}"></div>
-    <div class="form-group"><label class="form-label">KM Ida</label><input class="form-input" name="jKI${n}" type="number" value="${data?.ida_km||0}"></div>
-    <div class="form-group"><label class="form-label">KM Volta</label><input class="form-input" name="jKV${n}" type="number" value="${data?.volta_km||0}"></div>
-    <div class="form-group"><label class="form-label">Saida Ida</label><input class="form-input" name="jHSI${n}" type="time" value="${data?.ida_horario_saida||''}"></div>
-    <div class="form-group"><label class="form-label">Chegada Ida</label><input class="form-input" name="jHCI${n}" type="time" value="${data?.ida_horario_chegada||''}"></div>
-    <div class="form-group"><label class="form-label">Saida Volta</label><input class="form-input" name="jHSV${n}" type="time" value="${data?.volta_horario_saida||''}"></div>
-    <div class="form-group"><label class="form-label">Chegada Volta</label><input class="form-input" name="jHCV${n}" type="time" value="${data?.volta_horario_chegada||''}"></div>
+
+  <div class="jrn-sec">
+    <div class="jrn-linha">
+      <span class="jrn-tag">Data</span>
+      <input class="jrn-in date" name="jData${n}" type="date" value="${data?.data||hoje}" oninput="atualizarResumoJornada(${n})">
+    </div>
   </div>
-  <div style="padding:10px 13px;background:var(--bg);border-top:1px solid var(--gray)">
-    <div class="form-label" style="margin-bottom:6px">Equipe neste dia <span style="font-weight:400;color:var(--gray-mid);font-size:10px">(desmarque quem não veio)</span></div>
+
+  <div class="jrn-sec">
+    <div class="jrn-sec-title">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+      Horas trabalhadas no cliente
+    </div>
+    <div class="jrn-linha">
+      <span class="jrn-tag">Manhã</span>
+      <input class="jrn-in time" name="jMI${n}" type="time" value="${data?.manha_inicio||''}" oninput="atualizarResumoJornada(${n})">
+      <span class="jrn-lig">até</span>
+      <input class="jrn-in time" name="jMF${n}" type="time" value="${data?.manha_fim||''}" oninput="atualizarResumoJornada(${n})">
+    </div>
+    <div class="jrn-linha">
+      <span class="jrn-tag">Tarde</span>
+      <input class="jrn-in time" name="jTI${n}" type="time" value="${data?.tarde_inicio||''}" oninput="atualizarResumoJornada(${n})">
+      <span class="jrn-lig">até</span>
+      <input class="jrn-in time" name="jTF${n}" type="time" value="${data?.tarde_fim||''}" oninput="atualizarResumoJornada(${n})">
+      <span class="jrn-total" id="jrnTotH${n}">0h</span>
+    </div>
+  </div>
+
+  <div class="jrn-sec">
+    <div class="jrn-sec-title">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 17h14v-5l-2-5H7L5 12z"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>
+      Deslocamento
+    </div>
+    <div class="jrn-linha">
+      <span class="jrn-tag">Ida</span>
+      <span class="jrn-lig">saiu</span>
+      <input class="jrn-in time" name="jHSI${n}" type="time" value="${data?.ida_horario_saida||''}">
+      <span class="jrn-lig">chegou</span>
+      <input class="jrn-in time" name="jHCI${n}" type="time" value="${data?.ida_horario_chegada||''}">
+      <input class="jrn-in km" name="jKI${n}" type="number" min="0" placeholder="km" value="${data?.ida_km||''}" oninput="atualizarResumoJornada(${n})">
+    </div>
+    <div class="jrn-linha">
+      <span class="jrn-tag">Volta</span>
+      <span class="jrn-lig">saiu</span>
+      <input class="jrn-in time" name="jHSV${n}" type="time" value="${data?.volta_horario_saida||''}">
+      <span class="jrn-lig">chegou</span>
+      <input class="jrn-in time" name="jHCV${n}" type="time" value="${data?.volta_horario_chegada||''}">
+      <input class="jrn-in km" name="jKV${n}" type="number" min="0" placeholder="km" value="${data?.volta_km||''}" oninput="atualizarResumoJornada(${n})">
+      <span class="jrn-total" id="jrnTotKm${n}">0 km</span>
+    </div>
+  </div>
+
+  <div class="jrn-sec" style="background:var(--bg)">
+    <div class="jrn-sec-title" style="margin-bottom:7px">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      Quem trabalhou neste dia
+    </div>
     <div id="jornadaEquipe${n}" class="jornada-equipe-box" style="display:flex;flex-wrap:wrap;gap:6px"></div>
   </div>`
   document.getElementById('jornadasList').appendChild(div)
   renderJornadaEquipe(n, equipeJornada)
+  atualizarResumoJornada(n)
+}
+
+// Recalcula horas e km enquanto o técnico preenche
+function atualizarResumoJornada(n){
+  const el=document.getElementById('jornada-'+n); if(!el) return
+  const v=nome=>el.querySelector(`[name="${nome}${n}"]`)?.value||''
+  const min=minutosEntre(v('jMI'),v('jMF'))+minutosEntre(v('jTI'),v('jTF'))
+  const h=Math.floor(min/60), m=min%60
+  const hStr=min?(m?`${h}h${String(m).padStart(2,'0')}`:`${h}h`):'0h'
+  const km=(parseFloat(v('jKI'))||0)+(parseFloat(v('jKV'))||0)
+  const th=document.getElementById('jrnTotH'+n); if(th) th.textContent=hStr
+  const tk=document.getElementById('jrnTotKm'+n); if(tk) tk.textContent=km+' km'
+  const res=document.getElementById('jrnResumo'+n)
+  if(res){
+    const d=v('jData')
+    res.innerHTML=(d?`<span>${fmtDate(d)}</span>`:'')+`<span><b>${hStr}</b></span><span><b>${km}</b> km</span>`
+  }
 }
 
 // Renderiza os chips de equipe dentro de uma jornada especifica
@@ -2760,10 +2844,10 @@ async function carregarAtivos(clienteId){
   const box=document.getElementById('ativosLista'); if(!box) return
   box.innerHTML=(data||[]).map(a=>`
     <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(0,0,0,.06);${a.ativo===false?'opacity:.5':''}">
-      <div style="width:34px;height:34px;border-radius:8px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${esc((a.tag||'?').substring(0,4))}</div>
+      <div style="min-width:52px;padding:5px 8px;border-radius:7px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;letter-spacing:.5px">${esc(a.tag||'—')}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:600;color:var(--navy)">${esc([a.fabricante,a.modelo].filter(Boolean).join(' ')||a.tipo||'Sem modelo')}</div>
-        <div style="font-size:11px;color:var(--gray-mid)">${[a.tipo,a.numero_serie?'Série '+a.numero_serie:'',a.ano].filter(Boolean).map(esc).join(' · ')||'—'}</div>
+        <div style="font-size:11px;color:var(--gray-mid)">${[a.tag?'Nº interno '+a.tag:'',a.tipo,a.numero_serie?'Série '+a.numero_serie:'',a.ano].filter(Boolean).map(esc).join(' · ')||'—'}</div>
       </div>
       <button class="btn-icon edit" title="Editar" onclick='editarAtivo(${JSON.stringify(a).replace(/'/g,"\\'").replace(/"/g,'&quot;')})'>✏</button>
       <button class="btn-icon" title="${a.ativo===false?'Reativar':'Desativar'}" onclick="alternarAtivo('${a.id}',${a.ativo===false})">${a.ativo===false?'✔':'🚫'}</button>
