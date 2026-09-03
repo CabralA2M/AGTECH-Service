@@ -1397,8 +1397,10 @@ input,select,textarea{font-family:inherit}
       <!-- Arquivos -->
       <div class="modal-section">Imagens (até 6)</div>
       <div class="file-grid" id="imgGrid"></div>
+      <div id="imgSalvos" style="display:none"></div>
       <div class="modal-section" style="margin-top:14px">Anexos (até 6)</div>
       <div class="file-grid" id="anexGrid"></div>
+      <div id="anexSalvos" style="display:none"></div>
 
       <!-- Pendência -->
       <div class="modal-section">Pendência</div>
@@ -2239,7 +2241,7 @@ async function openModalRelatorio(id=null) {
     document.getElementById('modalRelatorioTitle').textContent='Editar OS'
     document.getElementById('relId').value=id
     showLoading()
-    const {data:r}=await sb.from('relatorios').select('*,jornadas(*),pendencias(*)').eq('id',id).single()
+    const {data:r}=await sb.from('relatorios').select('*,jornadas(*),pendencias(*),relatorio_arquivos(*)').eq('id',id).single()
     hideLoading(); if(!r){toast('Erro','error');return}
     if(r.encerrada){toast('Esta OS está encerrada e não pode ser editada','error');return}
     document.getElementById('modalRelatorioTitle').textContent='Editar OS Nº '+osNum(r)
@@ -2256,6 +2258,7 @@ async function openModalRelatorio(id=null) {
     document.getElementById('relData').value=r.data_conclusao||''
     document.getElementById('relDescricao').value=r.descricao||''
     // Equipe Técnica da OS (precisa vir ANTES das jornadas)
+    renderArquivosSalvos(r.relatorio_arquivos||[])
     await onClienteOSChange(r.ativo_id||'')
     await renderEquipeChecklist(r.equipe_ids||[])
     if(r.pendencias?.length){
@@ -2384,6 +2387,7 @@ function resetModalRelatorio(){
   document.getElementById('pendFields').style.display='none'; document.getElementById('jornadasList').innerHTML=''
   document.getElementById('modalRelBtnsLeft').innerHTML=''; G.jornadaCount=0; G.imgFiles={}; G.anexFiles={}
   buildFileGrid('imgGrid','img',6); buildFileGrid('anexGrid','anex',6); setCompany('agtech')
+  renderArquivosSalvos([])   // limpa os arquivos da OS anterior
   G_sigTecManual=null
   G_equipeSel=[]
   const eqc=document.getElementById('equipeChecklist'); if(eqc) eqc.innerHTML=''
@@ -2526,6 +2530,51 @@ function buildFileGrid(gridId,prefix,count){
     grid.appendChild(slot)
   }
 }
+
+// ── Arquivos JÁ SALVOS no banco (evita o técnico reenviar por achar que sumiu) ──
+function renderArquivosSalvos(arquivos){
+  const imgs=(arquivos||[]).filter(a=>a.tipo==='imagem')
+  const anex=(arquivos||[]).filter(a=>a.tipo==='anexo')
+  pintarArquivosSalvos('imgSalvos', imgs, true)
+  pintarArquivosSalvos('anexSalvos', anex, false)
+}
+
+function pintarArquivosSalvos(boxId, lista, ehImagem){
+  const box=document.getElementById(boxId); if(!box) return
+  if(!lista.length){ box.style.display='none'; box.innerHTML=''; return }
+  box.style.display='block'
+  box.innerHTML=`
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-mid);margin:10px 0 7px">
+      Já enviados (${lista.length})
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      ${lista.map(a=>`
+        <div style="position:relative;width:${ehImagem?'82px':'auto'};border:1.5px solid var(--gray);border-radius:8px;overflow:hidden;background:#fff" id="arq-${a.id}">
+          ${ehImagem
+            ? `<img src="${a.caminho_arquivo}" style="width:82px;height:62px;object-fit:cover;display:block;cursor:pointer" onclick="window.open('${a.caminho_arquivo}','_blank')" title="${esc(a.nome_original||'')}">`
+            : `<div style="padding:8px 26px 8px 10px;font-size:11px;color:var(--navy);max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer" onclick="window.open('${a.caminho_arquivo}','_blank')" title="${esc(a.nome_original||'')}">📎 ${esc(a.nome_original||'arquivo')}</div>`}
+          <button type="button" title="Excluir" onclick="excluirArquivoOS('${a.id}','${esc(a.nome_original||'').replace(/'/g,"")}')"
+            style="position:absolute;top:2px;right:2px;width:19px;height:19px;border:none;border-radius:50%;background:rgba(204,34,34,.92);color:#fff;font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">&times;</button>
+        </div>`).join('')}
+    </div>`
+}
+
+async function excluirArquivoOS(id,nome){
+  if(!confirm(`Excluir ${nome||'este arquivo'}?\n\nEsta ação não pode ser desfeita.`))return
+  showLoading()
+  const {error}=await sb.from('relatorio_arquivos').delete().eq('id',id)
+  hideLoading()
+  if(error){toast('Erro: '+error.message,'error');return}
+  const el=document.getElementById('arq-'+id); if(el) el.remove()
+  toast('Arquivo excluído','info')
+  // recarrega para atualizar os contadores
+  const relId=document.getElementById('relId').value
+  if(relId){
+    const {data}=await sb.from('relatorio_arquivos').select('*').eq('relatorio_id',relId)
+    renderArquivosSalvos(data||[])
+  }
+}
+
 function handleFileSlot(input,prefix,num){
   if(!input.files[0])return
   if(prefix==='img') G.imgFiles[num]=input.files[0]; else G.anexFiles[num]=input.files[0]
