@@ -1232,6 +1232,19 @@ input,select,textarea{font-family:inherit}
                 <div><div class="settings-card-title">Backup — Histórico</div><div class="settings-card-desc">Relatórios do sistema anterior, somente leitura</div></div>
               </div>
               <div class="settings-card-body">
+                <!-- Pasta do Drive com os PDFs -->
+                <div style="background:var(--bg);border-radius:9px;padding:12px;margin-bottom:14px">
+                  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-mid);margin-bottom:7px">Pasta dos PDFs no Google Drive</div>
+                  <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">
+                    <input class="form-input" id="bkDriveUrl" placeholder="Cole aqui o link da pasta compartilhada..." style="flex:1;min-width:220px;font-size:12px">
+                    <button class="btn btn-secondary" style="font-size:12px" onclick="salvarDriveBackup()">Salvar</button>
+                    <button class="btn btn-ghost" style="font-size:12px" id="bkDriveAbrir" onclick="abrirDriveBackup()" disabled>📁 Abrir pasta</button>
+                  </div>
+                  <div style="font-size:11px;color:var(--gray-mid);margin-top:7px;line-height:1.5">
+                    Guarde aqui os PDFs baixados do sistema antigo. Assim o histórico continua acessível mesmo se o Bubble sair do ar.
+                  </div>
+                </div>
+
                 <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
                   <input class="form-input" id="bkBusca" placeholder="Buscar por nº, cliente, título ou série..." style="flex:1;min-width:200px" oninput="filtrarBackup()">
                   <select class="form-select" id="bkFiltroPdf" onchange="filtrarBackup()" style="width:auto;font-size:12px">
@@ -3238,8 +3251,158 @@ function showSettingsSection(id,el){
 // Somente leitura. Tabelas historico_* isoladas da operação.
 // ============================================================
 let G_backup=[]
+let G_driveBackupUrl=''
+
+// ── Link da pasta do Drive ──
+async function carregarDriveBackup(){
+  try{
+    const {data}=await sb.from('app_config').select('valor').eq('chave','backup_drive_url').maybeSingle()
+    G_driveBackupUrl=(data?.valor?.url)||''
+  }catch(e){ G_driveBackupUrl='' }
+  const inp=document.getElementById('bkDriveUrl'); if(inp) inp.value=G_driveBackupUrl
+  const btn=document.getElementById('bkDriveAbrir'); if(btn) btn.disabled=!G_driveBackupUrl
+}
+
+async function salvarDriveBackup(){
+  const url=(document.getElementById('bkDriveUrl')?.value||'').trim()
+  if(url && !/^https?:\/\//i.test(url)){toast('O link deve começar com https://','error');return}
+  showLoading()
+  const {error}=await sb.from('app_config')
+    .upsert({chave:'backup_drive_url',valor:{url},atualizado_em:new Date().toISOString()},{onConflict:'chave'})
+  hideLoading()
+  if(error){toast('Erro: '+error.message,'error');return}
+  G_driveBackupUrl=url
+  document.getElementById('bkDriveAbrir').disabled=!url
+  toast('Link salvo','success')
+}
+
+function abrirDriveBackup(){
+  if(G_driveBackupUrl) window.open(G_driveBackupUrl,'_blank')
+}
+
+// ── Converter um relatório histórico em OS editável ──
+async function converterParaOS(numero){
+  const r=G_backup.find(x=>x.numero===numero); if(!r) return
+  if(r.convertido_os_id){
+    if(confirm('Este relatório já foi convertido.\n\nAbrir a OS criada?')) viewRelatorio(r.convertido_os_id)
+    return
+  }
+  // carrega clientes para casar o histórico com o cadastro atual
+  if(!G.clientes||!G.clientes.length){
+    const {data}=await sb.from('clientes').select('*').order('razao_social'); G.clientes=data||[]
+  }
+  // tenta casar por código, depois por nome
+  let match=G.clientes.find(c=>c.codigo_cliente && r.cliente_codigo && String(c.codigo_cliente).trim()===String(r.cliente_codigo).trim())
+  if(!match && r.cliente_nome){
+    const alvo=r.cliente_nome.toLowerCase().replace(/[.,]/g,'').trim()
+    match=G.clientes.find(c=>(c.razao_social||'').toLowerCase().replace(/[.,]/g,'').trim()===alvo)
+      || G.clientes.find(c=>(c.razao_social||'').toLowerCase().includes(alvo.split(' ')[0]))
+  }
+
+  const corpo=document.getElementById('bkCorpo')
+  const bloco=document.createElement('div')
+  bloco.id='bkConverterBox'
+  bloco.style.cssText='border:2px solid var(--navy);border-radius:10px;padding:14px;margin-bottom:14px;background:#F7F9FC'
+  bloco.innerHTML=`
+    <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px">Converter em Ordem de Serviço</div>
+    <div style="font-size:11.5px;color:var(--gray-mid);line-height:1.55;margin-bottom:11px">
+      Cria uma OS editável com os dados deste relatório, mantendo o número <b>${r.numero}</b>.
+      As jornadas e pendências também são copiadas. O registro histórico continua intacto.
+    </div>
+    <div class="form-group" style="margin-bottom:9px">
+      <label class="form-label">Cliente no sistema atual *</label>
+      <select class="form-select" id="bkConvCliente">
+        <option value="">Selecione...</option>
+        ${G.clientes.map(c=>`<option value="${c.id}" ${match&&match.id===c.id?'selected':''}>${esc(c.razao_social)}</option>`).join('')}
+      </select>
+      ${match
+        ? `<div style="font-size:11px;color:var(--success);margin-top:4px">Correspondência encontrada automaticamente</div>`
+        : `<div style="font-size:11px;color:var(--warning);margin-top:4px">Não achei correspondência para "${esc(r.cliente_nome||'—')}" — selecione manualmente</div>`}
+    </div>
+    <div style="display:flex;gap:7px">
+      <button class="btn btn-primary" style="font-size:12px" onclick="confirmarConversao(${r.numero})">Criar OS ${r.numero}</button>
+      <button class="btn btn-ghost" style="font-size:12px" onclick="document.getElementById('bkConverterBox').remove()">Cancelar</button>
+    </div>`
+  const antigo=document.getElementById('bkConverterBox'); if(antigo) antigo.remove()
+  corpo.insertBefore(bloco,corpo.firstChild)
+  corpo.scrollTop=0
+}
+
+async function confirmarConversao(numero){
+  const r=G_backup.find(x=>x.numero===numero); if(!r) return
+  const clienteId=document.getElementById('bkConvCliente')?.value
+  if(!clienteId){toast('Selecione o cliente','error');return}
+
+  showLoading()
+  try{
+    // 1) cria a OS preservando o número original
+    const payload={
+      numero_os:r.numero,
+      titulo:r.titulo||('Relatório '+r.numero),
+      cliente_id:clienteId,
+      empresa_emissora:r.agquimic?'agquimic':'agtech',
+      nome_interno:r.modelo_equipamento||null,
+      tipo_equipamento:r.tipo_equipamento||null,
+      tipo_chamada:r.tipo_chamada||null,
+      tipo_manutencao:(r.tipo_manutencao||'').toLowerCase()||null,
+      numero_serie:r.numero_serie||null,
+      data_conclusao:r.data_conclusao||null,
+      descricao:r.ocorrencia||null,
+      nome_cliente_assina:r.nome_cliente_assina||null,
+      tecnico_id:G.profile.id,
+      status_faturamento:r.faturado?'faturado':'pendente'
+    }
+    const {data:os,error:eOS}=await sb.from('relatorios').insert(payload).select().single()
+    if(eOS) throw new Error(eOS.message)
+
+    // 2) copia as jornadas
+    const {data:jor}=await sb.from('historico_jornadas').select('*').eq('relatorio_numero',numero)
+    if(jor&&jor.length){
+      const num=v=>{const n=parseFloat(String(v||'').replace(',','.'));return isNaN(n)?0:n}
+      await sb.from('jornadas').insert(jor.map(j=>({
+        relatorio_id:os.id, data:j.data,
+        manha_inicio:j.turno1_inicio||null, manha_fim:j.turno1_fim||null,
+        tarde_inicio:j.turno2_inicio||null, tarde_fim:j.turno2_fim||null,
+        ida_horario_saida:j.ida_hr1||null, ida_horario_chegada:j.ida_hr2||null,
+        volta_horario_saida:j.volta_hr1||null, volta_horario_chegada:j.volta_hr2||null,
+        ida_km:num(j.ida_km), volta_km:num(j.volta_km),
+        funcionarios_nomes:j.funcionarios||null
+      })))
+    }
+
+    // 3) copia as pendências
+    const {data:pen}=await sb.from('historico_pendencias').select('*').eq('relatorio_numero',numero)
+    if(pen&&pen.length){
+      const crit=c=>{const s=(c||'').toLowerCase();return s.includes('alt')?'alto':s.includes('baix')?'baixo':'medio'}
+      await sb.from('pendencias').insert(pen.map(p=>({
+        relatorio_id:os.id,
+        descricao:p.descricao||'(sem descrição)',
+        criticidade:crit(p.criticidade),
+        data_limite:p.data_limite||null,
+        responsabilidade:(p.responsabilidade||'').toLowerCase().includes('cliente')?'cliente':'agtech',
+        status:p.concluido?'resolvido':'aberto'
+      })))
+    }
+
+    // 4) marca o histórico como convertido
+    await sb.from('historico_relatorios')
+      .update({convertido_os_id:os.id,convertido_em:new Date().toISOString()})
+      .eq('numero',numero)
+    r.convertido_os_id=os.id
+
+    hideLoading()
+    closeModal('modalBackup')
+    toast(`OS ${r.numero} criada a partir do histórico`,'success')
+    viewRelatorio(os.id)
+  }catch(e){
+    hideLoading()
+    toast('Erro ao converter: '+e.message,'error')
+    console.error(e)
+  }
+}
 
 async function carregarBackup(){
+  carregarDriveBackup()
   const lista=document.getElementById('bkLista')
   if(G_backup.length){ filtrarBackup(); return }   // já carregado
   lista.innerHTML='<div style="padding:20px;text-align:center;font-size:12px;color:var(--gray-mid)">Carregando histórico...</div>'
@@ -3279,6 +3442,7 @@ function filtrarBackup(){
       ${r.tipo_manutencao?`<span class="tag ${r.tipo_manutencao==='Corretiva'?'tag-red':'tag-blue'}" style="font-size:9px">${esc(r.tipo_manutencao)}</span>`:''}
       ${nArq?`<span style="font-size:10px;color:var(--gray-mid);white-space:nowrap">📎 ${nArq}</span>`:''}
       ${r.pdf_url?`<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:9px;background:#D4EDDA;color:#155724;border:1px solid #B7EBCA">PDF</span>`:''}
+      ${r.convertido_os_id?`<span title="Já convertido em OS" style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:9px;background:#E7E9FD;color:#3730A3;border:1px solid #C7D2FE">OS</span>`:''}
     </div>`
   }).join('')||'<div style="padding:20px;text-align:center;font-size:12px;color:var(--gray-mid)">Nenhum relatório encontrado</div>'
 }
@@ -3312,9 +3476,15 @@ async function verBackup(numero){
       ${campo('Assinado por',r.nome_cliente_assina)}
     </div>
 
-    ${r.pdf_url?`<div style="margin-bottom:14px">
-      <a href="${r.pdf_url}" target="_blank" class="btn btn-danger" style="text-decoration:none;display:inline-flex">📄 Abrir PDF do relatório</a>
-    </div>`:'<div style="font-size:12px;color:var(--gray-mid);margin-bottom:14px">Este relatório não tinha PDF gerado no sistema antigo.</div>'}
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px">
+      ${r.pdf_url?`<a href="${r.pdf_url}" target="_blank" class="btn btn-danger" style="text-decoration:none;display:inline-flex">📄 Abrir PDF</a>`:''}
+      ${r.pdf_drive_url?`<a href="${r.pdf_drive_url}" target="_blank" class="btn btn-secondary" style="text-decoration:none;display:inline-flex">📁 PDF no Drive</a>`:''}
+      ${G_driveBackupUrl?`<button class="btn btn-ghost" onclick="abrirDriveBackup()">📁 Pasta do Drive</button>`:''}
+      ${r.convertido_os_id
+        ? `<button class="btn btn-ghost" onclick="closeModal('modalBackup');viewRelatorio(${JSON.stringify(r.convertido_os_id)})">✓ Já convertido — abrir OS</button>`
+        : `<button class="btn btn-primary" onclick="converterParaOS(${r.numero})">⟳ Converter em OS</button>`}
+    </div>
+    ${!r.pdf_url?'<div style="font-size:12px;color:var(--gray-mid);margin-bottom:14px">Este relatório não tinha PDF gerado no sistema antigo.</div>':''}
 
     ${r.ocorrencia?`<div class="section-divider"><span class="section-divider-label">Ocorrência</span></div>
       <div style="font-size:13px;line-height:1.65;white-space:pre-wrap;color:var(--text);margin-bottom:14px">${esc(r.ocorrencia)}</div>`:''}
