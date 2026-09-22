@@ -1398,6 +1398,8 @@ input,select,textarea{font-family:inherit}
     </div>
     <div class="modal-body" style="max-height:75vh;overflow-y:auto">
       <input type="hidden" id="relId">
+      <!-- Aviso exibido quando o financeiro ajusta uma OS ja encerrada -->
+      <div id="relAvisoFin" style="display:none;background:#FFF3CD;border:1px solid #FFE69C;border-radius:9px;padding:11px 13px;font-size:12px;color:#856404;line-height:1.55;margin-bottom:14px"></div>
 
       <!-- Empresa emissora -->
       <div class="modal-section">Empresa Emissora</div>
@@ -2219,6 +2221,10 @@ async function faturarOS(id){
 // FATURAMENTO — lista para o financeiro/contador
 // ============================================================
 async function loadFaturamento(){
+  if(!G.usuarios||!G.usuarios.length){
+    const {data:us}=await sb.from('usuarios').select('id,nome').eq('ativo',true).neq('perfil','cliente')
+    G.usuarios=us||[]
+  }
   const filtro=document.getElementById('fatFiltro')?.value||'todos'
   let q=sb.from('relatorios').select('*,clientes(razao_social)').order('numero_os',{ascending:false})
   if(filtro==='pendentes') q=q.eq('status_faturamento','enviado')
@@ -2242,6 +2248,8 @@ async function loadFaturamento(){
   const badge=document.getElementById('navBadgeFat')
   if(badge){ badge.textContent=aguardando; badge.style.display=aguardando?'inline-block':'none' }
 
+  // Financeiro e admin podem corrigir a OS direto daqui, mesmo encerrada.
+  const podeAjustarFat=['administrador','financeiro'].includes(G.profile?.perfil)
   let primeiroPago=true
   box.innerHTML=lista.map(r=>{
     const pago=r.status_faturamento==='faturado'
@@ -2254,10 +2262,11 @@ async function loadFaturamento(){
       <div class="fat-num">${osNum(r)}</div>
       <div style="flex:1;min-width:0">
         <div class="fat-cli">${esc(r.clientes?.razao_social||'—')}</div>
-        <div class="fat-sub">${esc(r.titulo||'')} · ${fmtDate(r.data_conclusao)}${r.faturado_em?' · faturado em '+fmtDate(r.faturado_em):''}</div>
+        <div class="fat-sub">${esc(r.titulo||'')} · ${fmtDate(r.data_conclusao)}${r.faturado_em?' · faturado em '+fmtDate(r.faturado_em):''}${r.ajustado_em?` · <span style="color:#B8860B;font-weight:600">ajustado ${esc(nomeAjuste(r.ajustado_por))}em ${fmtDate(r.ajustado_em)}</span>`:''}</div>
       </div>
       <span class="fat-tag ${pago?'ok':'aguard'}">${pago?'FATURADO':'A FATURAR'}</span>
       <button class="btn btn-ghost" style="font-size:11px;padding:5px 11px;white-space:nowrap" onclick="verPdf('completo',{relId:${r.id},numero:'${osNum(r)}'})">📄 Documento</button>
+      ${podeAjustarFat?`<button class="btn btn-ghost" style="font-size:11px;padding:5px 11px;white-space:nowrap;color:#B8860B;border-color:#F0D98C" onclick="openModalRelatorio(${r.id})" title="Corrigir horas, km e demais dados">✎ Ajustar</button>`:''}
       ${pago
         ? `<button class="btn btn-ghost" style="font-size:11px;padding:5px 11px;white-space:nowrap" onclick="desfazerFaturamento(${r.id})">Desfazer</button>`
         : `<button class="btn btn-success" style="font-size:11px;padding:5px 11px;white-space:nowrap" onclick="faturarOS(${r.id})">✓ Faturado</button>`}
@@ -2286,6 +2295,9 @@ async function deleteRelatorio(id){if(!confirm('Excluir esta OS?'))return;await 
 
 async function openModalRelatorio(id=null) {
   resetModalRelatorio()
+  G.ajusteFinanceiro=false
+  const _av=document.getElementById('relAvisoFin')
+  if(_av){_av.style.display='none'; _av.innerHTML=''}
   let tecnicoSel=G.profile.id, assinaturaSalvaOS=null
   if(id){
     document.getElementById('modalRelatorioTitle').textContent='Editar OS'
@@ -2293,7 +2305,15 @@ async function openModalRelatorio(id=null) {
     showLoading()
     const {data:r}=await sb.from('relatorios').select('*,jornadas(*),pendencias(*),relatorio_arquivos(*)').eq('id',id).single()
     hideLoading(); if(!r){toast('Erro','error');return}
-    if(r.encerrada){toast('Esta OS está encerrada e não pode ser editada','error');return}
+    // OS encerrada: so financeiro/admin podem abrir, para corrigir dados de cobranca.
+    const podeAjustarFat=['administrador','financeiro'].includes(G.profile.perfil)
+    if(r.encerrada && !podeAjustarFat){toast('Esta OS está encerrada e não pode ser editada','error');return}
+    G.ajusteFinanceiro = !!r.encerrada
+    const avisoFin=document.getElementById('relAvisoFin')
+    if(avisoFin && r.encerrada){
+      avisoFin.style.display=''
+      avisoFin.innerHTML='<b>Ajuste de faturamento.</b> Esta OS foi encerrada em '+fmtDate(r.encerrada_em)+'. Voce pode corrigir horas, km e demais dados; a correcao fica registrada no seu nome e o documento e gerado novamente com os novos valores.'
+    }
     document.getElementById('modalRelatorioTitle').textContent='Editar OS Nº '+osNum(r)
     tecnicoSel=r.tecnico_id||G.profile.id
     assinaturaSalvaOS=r.assinatura_tecnico||null
@@ -2652,13 +2672,28 @@ async function saveRelatorio(){
     const {data:ex}=await sb.from('pendencias').select('id').eq('relatorio_id',relId).single()
     if(ex) await sb.from('pendencias').update(pp).eq('id',ex.id); else await sb.from('pendencias').insert(pp)
   }
-  await sb.from('jornadas').delete().eq('relatorio_id',relId)
+  const {error:errDelJ}=await sb.from('jornadas').delete().eq('relatorio_id',relId)
+  if(errDelJ){hideLoading();toast('Sem permissao para alterar as jornadas: '+errDelJ.message,'error');return}
   const jd=[]
   for(let i=1;i<=G.jornadaCount;i++){const el=document.getElementById('jornada-'+i);if(!el)continue;const g=n=>el.querySelector(`[name="${n}"]`)?.value||null;const eqIds=lerEquipeJornada(i);const eqNomes=nomesEquipe(eqIds);jd.push({relatorio_id:relId,data:g('jData'+i),manha_inicio:g('jMI'+i),manha_fim:g('jMF'+i),tarde_inicio:g('jTI'+i),tarde_fim:g('jTF'+i),ida_km:parseFloat(g('jKI'+i)||0),volta_km:parseFloat(g('jKV'+i)||0),ida_horario_saida:g('jHSI'+i),ida_horario_chegada:g('jHCI'+i),volta_horario_saida:g('jHSV'+i),volta_horario_chegada:g('jHCV'+i),equipe_ids:eqIds,funcionarios_nomes:eqNomes.join(', '),funcionarios_qtd:eqIds.length})}
-  if(jd.length) await sb.from('jornadas').insert(jd.filter(j=>j.data))
+  if(jd.length){
+    const {error:errInsJ}=await sb.from('jornadas').insert(jd.filter(j=>j.data))
+    if(errInsJ){hideLoading();toast('Erro ao gravar as jornadas: '+errInsJ.message,'error');return}
+  }
   for(const [num,file] of Object.entries(G.imgFiles)){const path=`relatorios/${relId}/img_${num}_${Date.now()}`;const {data:up}=await sb.storage.from('arquivos').upload(path,file,{upsert:true});if(up){const {data:url}=sb.storage.from('arquivos').getPublicUrl(path);await sb.from('relatorio_arquivos').insert({relatorio_id:relId,tipo:'imagem',ordem:parseInt(num),caminho_arquivo:url.publicUrl,nome_original:file.name})}}
   for(const [num,file] of Object.entries(G.anexFiles)){const path=`relatorios/${relId}/anex_${num}_${Date.now()}`;const {data:up}=await sb.storage.from('arquivos').upload(path,file,{upsert:true});if(up){const {data:url}=sb.storage.from('arquivos').getPublicUrl(path);await sb.from('relatorio_arquivos').insert({relatorio_id:relId,tipo:'anexo',ordem:parseInt(num),caminho_arquivo:url.publicUrl,nome_original:file.name})}}
-  hideLoading(); closeModal('modalRelatorio'); toast(id?'OS atualizada!':('OS Nº '+osNum(novoReg)+' criada!'),'success'); loadRelatorios()
+  // Ajuste feito pelo financeiro em OS encerrada: registra autor e data.
+  // Best-effort: se as colunas ainda nao existirem no banco, o erro e ignorado.
+  if(id && G.ajusteFinanceiro){
+    try{ await sb.from('relatorios').update({ajustado_por:G.profile.id,ajustado_em:new Date().toISOString()}).eq('id',id) }catch(e){}
+  }
+  const eraAjuste=G.ajusteFinanceiro
+  G.ajusteFinanceiro=false
+  hideLoading(); closeModal('modalRelatorio')
+  toast(id?(eraAjuste?'Ajuste registrado na OS':'OS atualizada!'):('OS Nº '+osNum(novoReg)+' criada!'),'success')
+  // Volta para a lista de onde a OS foi aberta
+  const emFat=document.getElementById('page-faturamento')?.style.display==='block'
+  if(emFat) loadFaturamento(); else loadRelatorios()
 }
 async function downloadPdfOS(id,retornar=false){
   showLoading()
@@ -5497,6 +5532,12 @@ function toast(msg,type='success'){const d=document.createElement('div');d.class
 // UTILS
 function esc(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function cap(s){if(!s)return '–';return s.charAt(0).toUpperCase()+s.slice(1)}
+// Nome de quem fez o ajuste de faturamento; vazio se o usuario nao estiver carregado.
+function nomeAjuste(uid){
+  if(!uid) return ''
+  const u=(G.usuarios||[]).find(x=>x.id===uid)
+  return u?.nome?('por '+u.nome.split(' ')[0]+' '):''
+}
 // Data segura para nome de arquivo: cai para hoje se a data for invalida.
 function dataArquivo(d){const t=fmtDate(d);return (t==='–'?new Date().toLocaleDateString('pt-BR'):t).replace(/\//g,'-')}
 function fmtDate(d){if(!d)return '–';const dt=(typeof d==='string'&&d.length<=10)?new Date(d+'T00:00'):new Date(d);return isNaN(dt)?'–':dt.toLocaleDateString('pt-BR')}
