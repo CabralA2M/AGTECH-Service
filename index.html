@@ -367,10 +367,18 @@ input,select,textarea{font-family:inherit}
 .jrn-resumo{font-size:11px;color:rgba(255,255,255,.75);display:flex;gap:10px;white-space:nowrap}
 .jrn-resumo b{color:#fff}
 @media(max-width:520px){
-  .jrn-in.time{width:calc(50% - 34px)}
-  .jrn-in.km{width:70px}
-  .jrn-tag{min-width:44px}
+  /* No celular o rotulo ganha linha propria: os dois horarios ficam lado a
+     lado com o "ate" entre eles, em vez de o conector sobrar no fim da linha */
+  .jrn-linha{flex-wrap:wrap;gap:5px 6px;align-items:center}
+  .jrn-tag{flex:0 0 100%;min-width:0;margin-bottom:1px}
+  .jrn-in.time{flex:1 1 38%;min-width:76px;width:auto}
+  .jrn-par{flex:1 1 44%;min-width:132px}
+  .jrn-in.km{flex:0 0 64px;width:64px}
+  .jrn-lig{flex:0 0 auto}
+  .jrn-total{margin-left:auto;flex:0 0 auto}
 }
+.jrn-par{display:flex;align-items:center;gap:6px;flex:1 1 auto;min-width:0}
+.jrn-par .jrn-in.time{flex:1 1 auto;min-width:0}
 .jornada-item-header{background:var(--navy);padding:9px 13px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
 .jornada-item-title{font-size:13px;font-weight:700;color:#fff;letter-spacing:.3px;display:flex;align-items:center;gap:7px}
 .jornada-item-body{padding:13px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;background:#fff}
@@ -477,6 +485,7 @@ input,select,textarea{font-family:inherit}
 .fat-row.pago:hover{opacity:1;background:#F6FFF9}
 .fat-row.pago .fat-num,.fat-row.pago .fat-cli{color:var(--gray-mid)}
 .fat-num{font-size:15px;font-weight:800;color:var(--navy);min-width:64px}
+.fat-info{flex:1;min-width:0}
 .fat-cli{font-size:13px;font-weight:600;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fat-sub{font-size:11px;color:var(--gray-mid)}
 .fat-tag{font-size:9px;font-weight:800;padding:3px 9px;border-radius:10px;white-space:nowrap;letter-spacing:.4px}
@@ -721,6 +730,68 @@ input,select,textarea{font-family:inherit}
 .cl-type-option.active{border-color:var(--navy);background:rgba(26,35,50,.05)}
 .cl-type-option-name{font-size:11px;font-weight:700;color:var(--navy);margin-top:4px}
 @media(max-width:600px){.cl-type-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* ---- CELULAR: evita que a tela saia da largura e obrigue a dar zoom out ---- */
+@media(max-width:620px){
+  /* Card de OS: as acoes de icone passam para a propria linha */
+  .report-card-header{flex-wrap:wrap;padding:12px 14px 9px}
+  .report-actions{flex:1 1 100%;justify-content:flex-start;flex-wrap:wrap;margin-top:4px;padding-top:9px;border-top:1px solid var(--bg)}
+  .report-meta{padding:11px 14px;grid-template-columns:repeat(2,1fr)}
+  .report-desc{padding-left:14px;padding-right:14px}
+  .pending-inline{margin-left:14px;margin-right:14px}
+  /* Barra de filtros: dois por linha e o botao ocupando a largura toda */
+  .filter-bar{padding:12px 14px;gap:9px}
+  .filter-group{min-width:calc(50% - 5px)}
+  .filter-actions{flex:1 1 100%}
+  .filter-actions .btn{width:100%;justify-content:center}
+  /* Barra superior: o titulo encolhe e o nome do usuario sai (fica so o avatar) */
+  .topbar{padding:0 12px}
+  .topbar-left{min-width:0;flex:1 1 auto}
+  .page-title{font-size:16px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .topbar-right{gap:4px;flex-shrink:0}
+  .topbar-user{padding:4px 5px}
+  .t-name{display:none}
+  .topbar-divider{display:none}
+  /* Faturamento: a linha quebra em vez de esticar a pagina */
+  .fat-row{flex-wrap:wrap}
+  .fat-row .btn{flex:1 1 auto}
+  .fat-num{flex:0 0 auto;min-width:46px;font-size:14px}
+  .fat-info{flex:1 1 140px;min-width:120px}
+  .fat-tag{flex:0 0 auto}
+  .fat-cli{white-space:normal}
+  /* Cabecalho de painel: titulo e filtro empilham */
+  .panel-header{flex-wrap:wrap;gap:8px;padding:12px 14px}
+  .panel-title{font-size:15px;min-width:0;flex-wrap:wrap}
+  .panel-count{flex-basis:100%}
+  .panel-header .filter-select,.panel-header select{flex:1 1 100%;min-width:0}
+  /* Listas e paineis em geral */
+  .panel-body,.panel-content{padding-left:14px;padding-right:14px}
+  .content{padding:14px}
+  /* Selects nao podem crescer com o texto da maior opcao */
+  .filter-select,.filter-input,.form-select,.form-input{min-width:0;width:100%;max-width:100%}
+  .fat-row>div{min-width:0}
+  .fat-cli,.fat-sub{min-width:0;overflow:hidden;text-overflow:ellipsis}
+}
+/* Nenhum campo pode ultrapassar o container, em qualquer tela */
+select,input,textarea{max-width:100%}
+/* Telas bem estreitas (ate 360px): aperta os espacamentos */
+@media(max-width:360px){
+  .content{padding:10px}
+  .topbar{padding:0 8px}
+  .page-title{font-size:15px}
+  .panel-header{padding:10px}
+  .fat-row{padding:11px 10px;gap:8px}
+  .fat-row .btn{font-size:10px;padding:5px 8px}
+  .report-card-header{padding:11px 11px 8px}
+  .report-meta{padding:10px 11px;gap:8px}
+  .report-desc{padding-left:11px;padding-right:11px}
+  .pending-inline{margin-left:11px;margin-right:11px}
+  .filter-bar{padding:10px}
+  .filter-group{min-width:100%}
+  .btn-icon{width:29px;height:29px}
+}
+/* Trava geral: nada pode empurrar a pagina para os lados */
+html,body{max-width:100%;overflow-x:hidden}
 
 </style>
 </head>
@@ -2260,7 +2331,7 @@ async function loadFaturamento(){
     }
     return sep+`<div class="fat-row ${pago?'pago':''}">
       <div class="fat-num">${osNum(r)}</div>
-      <div style="flex:1;min-width:0">
+      <div class="fat-info">
         <div class="fat-cli">${esc(r.clientes?.razao_social||'—')}</div>
         <div class="fat-sub">${esc(r.titulo||'')} · ${fmtDate(r.data_conclusao)}${r.faturado_em?' · faturado em '+fmtDate(r.faturado_em):''}${r.ajustado_em?` · <span style="color:#B8860B;font-weight:600">ajustado ${esc(nomeAjuste(r.ajustado_por))}em ${fmtDate(r.ajustado_em)}</span>`:''}</div>
       </div>
@@ -2514,18 +2585,14 @@ function addJornadaField(data=null){
     </div>
     <div class="jrn-linha">
       <span class="jrn-tag">Ida</span>
-      <span class="jrn-lig">saiu</span>
-      <input class="jrn-in time" name="jHSI${n}" type="time" value="${data?.ida_horario_saida||''}">
-      <span class="jrn-lig">chegou</span>
-      <input class="jrn-in time" name="jHCI${n}" type="time" value="${data?.ida_horario_chegada||''}">
+      <span class="jrn-par"><span class="jrn-lig">saiu</span><input class="jrn-in time" name="jHSI${n}" type="time" value="${data?.ida_horario_saida||''}"></span>
+      <span class="jrn-par"><span class="jrn-lig">chegou</span><input class="jrn-in time" name="jHCI${n}" type="time" value="${data?.ida_horario_chegada||''}"></span>
       <input class="jrn-in km" name="jKI${n}" type="number" min="0" placeholder="km" value="${data?.ida_km||''}" oninput="atualizarResumoJornada(${n})">
     </div>
     <div class="jrn-linha">
       <span class="jrn-tag">Volta</span>
-      <span class="jrn-lig">saiu</span>
-      <input class="jrn-in time" name="jHSV${n}" type="time" value="${data?.volta_horario_saida||''}">
-      <span class="jrn-lig">chegou</span>
-      <input class="jrn-in time" name="jHCV${n}" type="time" value="${data?.volta_horario_chegada||''}">
+      <span class="jrn-par"><span class="jrn-lig">saiu</span><input class="jrn-in time" name="jHSV${n}" type="time" value="${data?.volta_horario_saida||''}"></span>
+      <span class="jrn-par"><span class="jrn-lig">chegou</span><input class="jrn-in time" name="jHCV${n}" type="time" value="${data?.volta_horario_chegada||''}"></span>
       <input class="jrn-in km" name="jKV${n}" type="number" min="0" placeholder="km" value="${data?.volta_km||''}" oninput="atualizarResumoJornada(${n})">
       <span class="jrn-total" id="jrnTotKm${n}">0 km</span>
     </div>
@@ -2560,14 +2627,23 @@ function atualizarResumoJornada(n){
   }
 }
 
-// Renderiza os chips de equipe dentro de uma jornada especifica
+// Renderiza os chips de equipe dentro de uma jornada especifica.
+// Lista TODOS os tecnicos cadastrados: a equipe da OS e a ja salva vem
+// marcadas, mas o tecnico pode incluir qualquer outro sem depender de ter
+// preenchido a Equipe Tecnica da OS nem de ter lancado horario de manha.
 function renderJornadaEquipe(n, idsMarcados){
   const box=document.getElementById('jornadaEquipe'+n); if(!box) return
-  const base = G_equipeSel.length ? G_equipeSel : idsMarcados
-  if(!base||!base.length){ box.innerHTML='<span style="font-size:11px;color:var(--gray-mid)">Selecione a Equipe Técnica da OS acima</span>'; return }
+  const marcados = idsMarcados||[]
+  const todos = (G.equipe||[]).map(u=>u.id)
+  // ordem: equipe da OS, depois quem ja estava marcado, depois o resto
+  const base = [...new Set([...G_equipeSel, ...marcados, ...todos])].filter(id=>todos.includes(id))
+  if(!base.length){
+    box.innerHTML='<span style="font-size:11px;color:var(--gray-mid)">Nenhum tecnico ativo cadastrado. Cadastre em Usuarios &amp; Clientes.</span>'
+    return
+  }
   box.innerHTML=base.map(id=>{
     const u=(G.equipe||[]).find(x=>x.id===id); if(!u) return ''
-    const on=idsMarcados.includes(id)
+    const on=marcados.includes(id)
     return `<label style="display:flex;align-items:center;gap:6px;padding:5px 9px;border:1.5px solid ${on?'var(--navy)':'var(--gray)'};border-radius:20px;cursor:pointer;font-size:11px" data-jeq="${n}" data-id="${id}">
       <input type="checkbox" ${on?'checked':''} onchange="this.parentElement.style.borderColor=this.checked?'var(--navy)':'var(--gray)'" style="width:13px;height:13px;accent-color:var(--navy)">
       ${esc(u.nome)}
@@ -2581,8 +2657,8 @@ function atualizarEquipeNasJornadas(){
     const n=box.id.replace('jornadaEquipe','')
     // preserva quem ja estava marcado, adiciona novos da equipe
     const marcados=[...box.querySelectorAll('label[data-id]')].filter(l=>l.querySelector('input').checked).map(l=>l.dataset.id)
-    const novos=G_equipeSel.filter(id=>!marcados.includes(id)&&!box.querySelector(`label[data-id="${id}"]`))
-    renderJornadaEquipe(n, [...marcados, ...novos])
+    // quem foi incluido na Equipe Tecnica da OS ja entra marcado no dia
+    renderJornadaEquipe(n, [...new Set([...marcados, ...G_equipeSel])])
   })
 }
 
@@ -2792,6 +2868,15 @@ async function downloadPdfOS(id,retornar=false){
       doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(90)
       const linhas=doc.splitTextToSize('Equipe: '+equipe.join(', '),W-M*2)
       doc.text(linhas,M,y); y+=linhas.length*4+4
+    }
+  } else if((r.equipe_ids||[]).length){
+    // Sem jornada lancada, a equipe da OS ainda precisa sair no relatorio
+    const nomes=nomesEquipe(r.equipe_ids)
+    if(nomes.length){
+      doc.setTextColor(46,64,87); doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.text('EQUIPE TECNICA',M,y); y+=5
+      doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(90)
+      const linhas=doc.splitTextToSize(nomes.join(', '),W-M*2)
+      doc.text(linhas,M,y); y+=linhas.length*4+5
     }
   }
   // ---- FOTOS E ANEXOS ----
